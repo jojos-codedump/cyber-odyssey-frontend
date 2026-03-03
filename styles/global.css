@@ -1,0 +1,94 @@
+/* styles/global.css */
+
+:root {
+    /* The Cyber Odyssey Hacker Palette */
+    --bg-base: #050505;
+    --bg-panel: #111111;
+    --bg-input: #1a1a1a;
+    --neon-cyan: #00ffcc;
+    --neon-cyan-dim: rgba(0, 255, 204, 0.2);
+    --alert-red: #ff4444;
+    --warning-yellow: #ffcc00;
+    --text-main: #e0e0e0;
+    --text-muted: #888888;
+    --border-color: #333333;
+    
+    /* Typography */
+    --font-mono: 'Courier New', Courier, monospace;
+}
+
+/* Base Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* Custom Cyber Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-base);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-cyan);
+}
+
+/* Universal Button Styles */
+.btn-primary {
+    background-color: var(--neon-cyan);
+    color: #000;
+    border: 1px solid var(--neon-cyan);
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: bold;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: transparent;
+    color: var(--neon-cyan);
+    box-shadow: 0 0 15px var(--neon-cyan-dim), inset 0 0 10px var(--neon-cyan-dim);
+}
+
+.btn-primary:disabled {
+    background-color: var(--border-color);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Universal Text Animations */
+@keyframes pulseGlow {
+    0%, 100% { text-shadow: 0 0 5px var(--neon-cyan-dim); }
+    50% { text-shadow: 0 0 20px var(--neon-cyan); }
+}
+
+.glitch-text {
+    position: relative;
+    display: inline-block;
+    color: var(--neon-cyan);
+    animation: pulseGlow 2s infinite;
+}

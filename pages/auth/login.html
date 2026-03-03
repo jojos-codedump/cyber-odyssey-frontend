@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Cyber Odyssey 2.0</title>
+    <link rel="stylesheet" href="../../styles/global.css">
+    <link rel="stylesheet" href="../../styles/auth.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2 class="glitch-text" data-text="SYSTEM ACCESS">SYSTEM ACCESS</h2>
+                <p>Authenticate to access the Cyber Odyssey 2.0 network.</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Staff / Participant Node</label>
+                    <input type="email" id="email" required placeholder="user@cyberodyssey.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Security Passcode</label>
+                    <input type="password" id="password" required placeholder="••••••••">
+                </div>
+                
+                <button type="submit" id="submit-btn" class="btn-primary">INITIALIZE LOG IN</button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Not registered yet? <a href="register.html">Create a Team ID / Register</a></p>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <script type="module">
+        import { loginUser } from '../../scripts/auth/auth-handler.js';
+
+        const loginForm = document.getElementById('login-form');
+        const submitBtn = document.getElementById('submit-btn');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); 
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // UI Feedback: Update button state during authentication [cite: 61-62]
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = 'AUTHENTICATING...';
+            submitBtn.disabled = true;
+
+            try {
+                // Executes the login handler which fetches Firestore roles and routes the user [cite: 351-356]
+                await loginUser(email, password);
+            } catch (error) {
+                // Error handling is managed inside auth-handler.js via alerts [cite: 360]
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

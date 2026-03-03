@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Canvas - Cyber Odyssey 2.0</title>
+    <link rel="stylesheet" href="../../styles/global.css">
+    <link rel="stylesheet" href="../../styles/dashboards.css">
+    <style>
+        /* Gallery Specific Styles */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            padding-bottom: 50px;
+        }
+        .poster-card {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .poster-card:hover {
+            border-color: var(--neon-cyan);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+        .poster-thumbnail {
+            width: 100%;
+            height: 200px;
+            background: #050505;
+            border: 1px dashed #444;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            object-fit: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #444;
+        }
+
+        /* Evaluation Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--bg-panel); border: 1px solid var(--neon-cyan); width: 95%; max-width: 1000px;
+            max-height: 90vh; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .modal-body { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; padding: 25px; overflow-y: auto; }
+        .score-input { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 4px; }
+    </style>
+</head>
+<body style="background-color: #050505;">
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <h2 style="color: #00ffcc;">Cyber Odyssey</h2>
+            <nav>
+                <ul id="nav-links">
+                    <li><a href="#" class="active">Poster Gallery</a></li>
+                    <li id="nav-back"><a href="../dashboards/admin.html">← Back to Overview</a></li>
+                </ul>
+            </nav>
+            <button id="logout-btn" class="btn-logout">Exit System</button>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header">
+                <div>
+                    <h1 style="color: #00ffcc; margin-bottom: 5px;">Cyber Canvas</h1>
+                    <p style="color: #888; font-family: monospace;">DIGITAL POSTER GALLERY & EVALUATION</p>
+                </div>
+                <div style="text-align: right;">
+                    <span id="role-indicator" style="background: #111; padding: 5px 10px; border: 1px solid #333; border-radius: 5px; color: #aaa; font-size: 0.8rem;"></span>
+                </div>
+            </header>
+
+            <section class="gallery-controls" style="margin-bottom: 30px; display: flex; gap: 15px;">
+                <input type="text" id="search-box" placeholder="Search Team ID or Topic..." class="score-input" style="max-width: 400px;">
+                <button class="btn-primary" id="btn-refresh">REFRESH ROSTER</button>
+            </section>
+
+            <div id="gallery-grid" class="gallery-grid">
+                <p style="color: #555;">Initializing gallery nodes...</p>
+            </div>
+        </main>
+    </div>
+
+    <div id="eval-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="padding: 15px; border-bottom: 1px solid #222; display: flex; justify-content: space-between;">
+                <h2 id="eval-team-name" style="color: var(--neon-cyan); margin: 0;"></h2>
+                <button id="close-modal" style="background: none; border: none; color: #ff4444; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="preview-panel">
+                    <img id="eval-image" src="" alt="Poster Preview" style="width: 100%; border: 1px solid #333; border-radius: 4px;">
+                </div>
+                <div class="form-panel">
+                    <form id="eval-form">
+                        <input type="hidden" id="eval-team-id">
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="color: #888;">Design & Visual Impact (1-10)</label>
+                            <input type="number" id="score-design" min="1" max="10" required class="score-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="color: #888;">Technical Depth (1-10)</label>
+                            <input type="number" id="score-tech" min="1" max="10" required class="score-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="color: #888;">Judge Feedback</label>
+                            <textarea id="eval-feedback" rows="4" class="score-input" style="font-family: monospace;"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: 100%;">COMMIT EVALUATION</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
+        import { apiClient } from '../../scripts/api/api-client.js';
+
+        monitorAuthState(true, ['Admin', 'Volunteer', 'Judge']); 
+
+        const role = sessionStorage.getItem("userRole"); 
+        const assignedEvent = sessionStorage.getItem("assignedEvent");
+        const backLink = document.querySelector('#nav-back a');
+        const roleIndicator = document.getElementById('role-indicator');
+
+        // Setup UI context [cite: 236-238]
+        roleIndicator.innerText = `ACCESS: ${role.toUpperCase()}`;
+        if (role === 'Volunteer') backLink.href = '../dashboards/volunteer.html';
+        if (role === 'Judge') backLink.href = '../dashboards/judge.html';
+
+        const grid = document.getElementById('gallery-grid');
+        let currentRoster = [];
+
+        // 1. Fetch and Render Gallery 
+        async function loadGallery() {
+            try {
+                grid.innerHTML = '<p style="color: #00ffcc;">Fetching submission directory...</p>';
+                currentRoster = await apiClient.fetchEventRoster('event_cyber_canvas');
+                renderGallery(currentRoster);
+            } catch (err) {
+                grid.innerHTML = `<p style="color: #ff4444;">Error: ${err.message}</p>`;
+            }
+        }
+
+        function renderGallery(data) {
+            grid.innerHTML = '';
+            data.forEach(participant => {
+                const card = document.createElement('div');
+                card.className = 'poster-card';
+                card.innerHTML = `
+                    <div class="poster-thumbnail">
+                        ${participant.poster_url ? `<img src="${participant.poster_url}" style="width:100%; height:100%; object-fit:cover;">` : '[No Poster Uploaded]'}
+                    </div>
+                    <h3 style="color: #fff; margin-bottom: 5px;">${participant.team_name || participant.full_name}</h3>
+                    <p style="color: var(--neon-cyan); font-family: monospace; font-size: 0.8rem; margin-bottom: 15px;">ID: ${participant.team_id || 'INDV'}</p>
+                    <button class="btn-primary btn-eval" style="width: 100%; font-size: 0.8rem;">OPEN EVALUATION</button>
+                `;
+
+                card.querySelector('.btn-eval').onclick = () => openEvaluation(participant);
+                grid.appendChild(card);
+            });
+        }
+
+        // 2. Evaluation Logic [cite: 342]
+        const modal = document.getElementById('eval-modal');
+        function openEvaluation(p) {
+            if (role === 'Participant') return;
+            document.getElementById('eval-team-name').innerText = p.team_name || p.full_name;
+            document.getElementById('eval-team-id').value = p.team_id || p.id;
+            document.getElementById('eval-image').src = p.poster_url || '';
+            modal.style.display = 'flex';
+        }
+
+        document.getElementById('eval-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.innerText = 'COMMITTING...';
+            btn.disabled = true;
+
+            const payload = {
+                target_id: document.getElementById('eval-team-id').value,
+                scores: {
+                    design: parseInt(document.getElementById('score-design').value),
+                    technical: parseInt(document.getElementById('score-tech').value)
+                },
+                feedback: document.getElementById('eval-feedback').value,
+                event_id: 'event_cyber_canvas'
+            };
+
+            try {
+                await apiClient.submitEvaluation(payload); 
+                alert('Scores committed successfully.');
+                modal.style.display = 'none';
+                e.target.reset();
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            } finally {
+                btn.innerText = 'COMMIT EVALUATION';
+                btn.disabled = false;
+            }
+        };
+
+        // Initialize [cite: 239-240]
+        loadGallery();
+        document.getElementById('btn-refresh').onclick = loadGallery;
+        document.getElementById('close-modal').onclick = () => modal.style.display = 'none';
+        document.getElementById('logout-btn').onclick = logoutUser;
+    </script>
+</body>
+</html>

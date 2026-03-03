@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeShield Dashboard - Cyber Odyssey</title>
+    <link rel="stylesheet" href="../../styles/global.css">
+    <link rel="stylesheet" href="../../styles/dashboards.css">
+    <link rel="stylesheet" href="../../styles/codeshield.css">
+</head>
+<body class="codeshield-theme">
+    <canvas id="matrix-canvas"></canvas>
+
+    <div class="dashboard-container" style="position: relative; z-index: 10; background: transparent;">
+        <aside class="sidebar" style="background: rgba(10, 10, 10, 0.85); border-right: 1px solid #00ffcc;">
+            <h2 class="glitch-text" data-text="CodeShield">CodeShield</h2>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active">Live Timer Console</a></li>
+                    <li id="nav-back"><a href="../dashboards/admin.html">← Back to Overview</a></li>
+                </ul>
+            </nav>
+            <button id="logout-btn" class="btn-logout" style="border-color: #00ffcc; color: #00ffcc;">Exit System</button>
+        </aside>
+
+        <main class="dashboard-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+            
+            <div class="timer-container" style="background: rgba(0, 0, 0, 0.7); padding: 50px; border-radius: 10px; border: 1px solid #00ffcc; box-shadow: 0 0 30px rgba(0, 255, 204, 0.2); text-align: center; backdrop-filter: blur(5px);">
+                <h1 class="glitch-text" data-text="SYSTEM COMPROMISE IN:" style="color: #fff; font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 20px;">SYSTEM COMPROMISE IN:</h1>
+                
+                <div id="countdown-display" style="font-size: 6rem; font-weight: bold; color: #00ffcc; font-family: monospace; text-shadow: 0 0 20px #00ffcc; margin-bottom: 30px;">
+                    07:00:00
+                </div>
+
+                <div class="timer-controls" style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="btn-start" class="btn-primary">INITIATE HACKATHON</button>
+                    <button id="btn-pause" class="btn-primary" style="background: #ffcc00; color: #000; display: none;">PAUSE</button>
+                    <button id="btn-reset" class="btn-primary" style="background: #ff4444; color: #fff; display: none;">OVERRIDE / RESET</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; color: #00ffcc; font-family: monospace; display: flex; align-items: center; gap: 10px;">
+                <div class="pulse-dot" style="width: 10px; height: 10px; background: #00ffcc; border-radius: 50%; box-shadow: 0 0 10px #00ffcc; animation: pulse 1.5s infinite;"></div>
+                <span>NETWORK SECURE | MONITORING 150 NODES</span>
+            </div>
+            
+        </main>
+    </div>
+
+    <script type="module">
+        import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
+        
+        // Ensure only Admins or assigned Volunteers can access this control panel [cite: 77-80]
+        monitorAuthState(true, ['Admin', 'Volunteer', 'Judge']);
+
+        // Handle the back button dynamically based on role
+        const role = sessionStorage.getItem("userRole");
+        const backLink = document.querySelector('#nav-back a');
+        if (role === 'Volunteer') backLink.href = '../dashboards/volunteer.html';
+        if (role === 'Judge') backLink.href = '../dashboards/judge.html';
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            logoutUser();
+        });
+    </script>
+    
+    <script type="module" src="../../scripts/events/codeshield-ui.js"></script>
+</body>
+</html>

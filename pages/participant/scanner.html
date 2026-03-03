@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner - Cyber Odyssey 2.0</title>
+    <link rel="stylesheet" href="../../styles/global.css">
+    <link rel="stylesheet" href="../../styles/dashboards.css">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body style="background-color: #050505;">
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <h2 style="color: #00ffcc; text-shadow: 0 0 10px rgba(0,255,204,0.3);">Cyber Odyssey</h2>
+            <nav>
+                <ul id="nav-links"></ul>
+            </nav>
+            <button id="logout-btn" class="btn-logout">Exit System</button>
+        </aside>
+
+        <main class="dashboard-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="scanner-wrapper" style="width: 100%; max-width: 500px; text-align: center;">
+                <h1 style="color: #00ffcc; margin-bottom: 10px;">Security Check-In</h1>
+                <p id="scan-feedback" style="margin-bottom: 20px; font-weight: bold; letter-spacing: 1px;">INITIALIZING HARDWARE...</p>
+                
+                <div style="width: 100%; border: 2px solid #333; border-radius: 8px; overflow: hidden; box-shadow: 0 0 20px rgba(0, 255, 204, 0.1); background: #000; position: relative;">
+                    <video id="native-camera" playsinline autoplay muted style="width: 100%; height: auto; display: none;"></video>
+                    
+                    <div id="reader" style="width: 100%; display: none;"></div>
+                </div>
+                
+                <div style="margin-top: 20px; color: #888; font-size: 0.85rem;">
+                    <p id="engine-indicator">Booting optical sensors...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
+        import { auth } from '../../scripts/auth/firebase-config.js';
+        // Corrected import path for utils
+        import { handleScan } from '../../scripts/utils/scanner-debounce.js'; 
+
+        const fb = document.getElementById('scan-feedback');
+        const engineIndicator = document.getElementById('engine-indicator');
+        const nativeVideo = document.getElementById('native-camera');
+        const fallbackReader = document.getElementById('reader');
+
+        monitorAuthState(true, ['Admin', 'Volunteer']);
+
+        const role = sessionStorage.getItem('userRole');
+        const nav = document.getElementById('nav-links');
+        if (nav) {
+            nav.innerHTML = role === 'Admin' 
+                ? `<li><a href="../dashboards/admin.html">Master Dashboard</a></li>`
+                : `<li><a href="../dashboards/volunteer.html">Event Dashboard</a></li>`;
+        }
+
+        let nativeStream = null;
+        let detectionLoop = null;
+
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) return;
+
+            // Check for Native OS Machine Learning Support
+            if ('BarcodeDetector' in window) {
+                engineIndicator.innerText = "Engine: Native OS Machine Learning (High Performance)";
+                engineIndicator.style.color = "#00ffcc";
+                nativeVideo.style.display = "block";
+
+                try {
+                    // FIX: Removed 'facingMode' so OBS Virtual Camera is permitted
+                    nativeStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { width: { ideal: 1280 } } 
+                    });
+                    nativeVideo.srcObject = nativeStream;
+
+                    const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+
+                    const scanFrame = async () => {
+                        if (nativeVideo.readyState === nativeVideo.HAVE_ENOUGH_DATA) {
+                            try {
+                                const barcodes = await barcodeDetector.detect(nativeVideo);
+                                if (barcodes.length > 0) {
+                                    handleScan(barcodes[0].rawValue, user.uid);
+                                }
+                            } catch (e) {}
+                        }
+                        detectionLoop = requestAnimationFrame(scanFrame);
+                    };
+
+                    nativeVideo.addEventListener('play', scanFrame);
+                    fb.innerText = "READY FOR SCAN";
+
+                } catch (err) {
+                    fb.innerText = `CAMERA BLOCKED: ${err.message}`;
+                    fb.style.color = "#ff4444";
+                }
+
+            } else {
+                // JS FALLBACK (For older devices/browsers)
+                engineIndicator.innerText = "Engine: Web JavaScript Algorithm (Standard)";
+                engineIndicator.style.color = "#ffcc00";
+                fallbackReader.style.display = "block";
+
+                const html5QrCode = new Html5Qrcode("reader");
+                // FIX: Removed 'facingMode' here as well just in case
+                const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+
+                try {
+                    await html5QrCode.start(
+                        { deviceId: { exact: undefined } }, // Requests default camera
+                        config,
+                        (decodedText) => handleScan(decodedText, user.uid)
+                    );
+                    fb.innerText = "READY FOR SCAN";
+                } catch (err) {
+                    fb.innerText = "CAMERA ACCESS DENIED";
+                    fb.style.color = "#ff4444";
+                }
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            if (nativeStream) {
+                nativeStream.getTracks().forEach(track => track.stop());
+                cancelAnimationFrame(detectionLoop);
+            }
+            logoutUser();
+        });
+    </script>
+</body>
+</html>

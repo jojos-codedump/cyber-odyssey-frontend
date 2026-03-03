@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Portal - Cyber Odyssey 2.0</title>
+    <link rel="stylesheet" href="../../styles/global.css">
+    <link rel="stylesheet" href="../../styles/dashboards.css">
+    <style>
+        /* Cyberpunk CRM Modals (Scoped for Volunteer) */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.9); backdrop-filter: blur(5px); z-index: 1000;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-content {
+            background: var(--bg-panel); border: 1px solid var(--neon-cyan); border-radius: 8px;
+            width: 100%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.1);
+        }
+        .modal-header {
+            padding: 20px; border-bottom: 1px dashed #333; display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-header h2 { color: var(--neon-cyan); margin: 0; }
+        .close-modal { color: #ff4444; cursor: pointer; font-size: 1.5rem; font-weight: bold; }
+        .modal-controls { padding: 20px; display: flex; gap: 15px; background: #0a0a0a; border-bottom: 1px solid #222; }
+        .modal-controls input { flex-grow: 1; padding: 10px; background: #111; border: 1px solid #333; color: #fff; font-family: monospace; }
+        .modal-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        
+        /* Roster Table */
+        .roster-table { width: 100%; border-collapse: collapse; color: #aaa; font-family: monospace; font-size: 0.9rem; }
+        .roster-table th { text-align: left; padding: 10px; border-bottom: 1px solid #333; color: #fff; }
+        .roster-table td { padding: 12px 10px; border-bottom: 1px dashed #222; }
+        .roster-table tr:hover { background: rgba(0, 255, 204, 0.05); }
+        .team-id-badge { background: #1a1a1a; padding: 4px 8px; border: 1px solid #444; border-radius: 4px; color: #00ffcc; }
+        
+        /* CRUD Action Buttons */
+        .btn-action-edit { background: transparent; border: 1px solid #ffcc00; color: #ffcc00; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-right: 5px; }
+        .btn-action-edit:hover { background: rgba(255, 204, 0, 0.1); }
+        .btn-action-revoke { background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .btn-action-revoke:hover { background: rgba(255, 68, 68, 0.1); }
+
+        /* Form styling for the Add Node Modal */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; color: #aaa; margin-bottom: 5px; font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; background: #111; border: 1px solid #333; color: #fff; border-radius: 4px; font-family: monospace; }
+        .form-group input:focus { border-color: var(--neon-cyan); outline: none; }
+        fieldset { border: 1px solid #333; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        legend { color: var(--neon-cyan); padding: 0 10px; font-size: 0.9rem; font-weight: bold; }
+    </style>
+</head>
+<body style="background-color: #050505;">
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <h2 style="color: #00ffcc;">Cyber Odyssey</h2>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active">My Assignment</a></li>
+                    <li><a href="../participant/scanner.html">QR Check-In Scanner</a></li>
+                    <li id="nav-event-link" style="display: none;"><a href="#">Event Control Panel</a></li>
+                </ul>
+            </nav>
+            <button id="logout-btn" class="btn-logout">Exit System</button>
+        </aside>
+
+        <main class="dashboard-content" style="display: flex; flex-direction: column;">
+            <header class="dashboard-header" style="margin-bottom: 30px;">
+                <div>
+                    <h1 style="color: #00ffcc; margin-bottom: 5px;">Volunteer Operations</h1>
+                    <p style="color: #888; font-family: monospace;">ON-GROUND EVENT MANAGEMENT & CRM</p>
+                </div>
+                <div style="text-align: right;">
+                    <span style="background: #111; padding: 5px 10px; border: 1px solid #333; border-radius: 5px; color: #aaa; font-size: 0.8rem;">
+                        ACCESS LEVEL: VOLUNTEER
+                    </span>
+                </div>
+            </header>
+
+            <section class="assignment-card" style="background: #111; border: 1px solid #333; border-left: 4px solid #00ffcc; border-radius: 8px; padding: 30px; max-width: 700px;">
+                <h3 style="color: #fff; margin-bottom: 15px; font-size: 1.2rem;">Current Assignment Status</h3>
+                
+                <div style="background: #0a0a0a; padding: 20px; border-radius: 5px; border: 1px solid #222; margin-bottom: 25px;">
+                    <p style="color: #888; margin-bottom: 5px; font-size: 0.9rem;">TARGET EVENT:</p>
+                    <h2 id="assigned-event-display" style="color: #00ffcc; font-family: monospace; letter-spacing: 1px;">FETCHING ASSIGNMENT...</h2>
+                </div>
+
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button id="btn-open-scanner" class="btn-primary" style="flex: 1; min-width: 200px; background: transparent; border: 1px solid #00ffcc; color: #00ffcc;">Launch QR Scanner</button>
+                    <button id="btn-view-roster" class="btn-primary" style="flex: 1; min-width: 200px; display: none;">Manage Roster</button>
+                    <button id="btn-open-event" class="btn-primary" style="flex: 1; min-width: 200px; display: none; background: #fff; color: #000; border-color: #fff;">Event Control Panel</button>
+                </div>
+                
+                <div id="no-assignment-warning" style="display: none; margin-top: 20px; padding: 15px; background: rgba(255, 68, 68, 0.1); border-left: 3px solid #ff4444; color: #ff4444; font-size: 0.9rem;">
+                    You currently have no active event assignment. Please contact the Master Admin to be provisioned to a module.
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="roster-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-event-title">Loading Roster...</h2>
+                <span class="close-modal" id="close-roster-modal">&times;</span>
+            </div>
+            <div class="modal-controls">
+                <input type="text" id="roster-search" placeholder="Filter by Team ID, Name, or Email...">
+                <button id="btn-open-comms" class="btn-primary" style="background: transparent; color: #00ffcc;">Dispatch Comms</button>
+                <button id="btn-open-add-node" class="btn-primary" style="background: #00ffcc; color: #000;">+ Register Node</button>
+            </div>
+            <div class="modal-body">
+                <table class="roster-table">
+                    <thead>
+                        <tr>
+                            <th>Team ID</th>
+                            <th>Participant Name</th>
+                            <th>Email</th>
+                            <th>Department/Year</th>
+                            <th>Actions</th> </tr>
+                    </thead>
+                    <tbody id="roster-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-node-modal" class="modal-overlay" style="z-index: 1005;">
+        <div class="modal-content" style="max-width: 600px; border-color: #00ffcc;">
+            <div class="modal-header">
+                <h2 style="color: #00ffcc;">Register New Participant</h2>
+                <span class="close-modal" id="close-add-node-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="add-node-form">
+                    <fieldset id="crud-team-section" style="display: none;">
+                        <legend>TEAM ASSIGNMENT</legend>
+                        <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                            <label style="color: #fff;"><input type="radio" name="crud_team_option" value="create" checked> Create Team</label>
+                            <label style="color: #fff;"><input type="radio" name="crud_team_option" value="join"> Join Existing</label>
+                        </div>
+                        <div id="crud-create-team-ui">
+                            <input type="text" id="crud_team_name" placeholder="New Team Name">
+                        </div>
+                        <div id="crud-join-team-ui" style="display: none;">
+                            <input type="text" id="crud_team_id" placeholder="Existing Team ID (e.g., TM-1042)">
+                        </div>
+                    </fieldset>
+
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="crud_full_name" required placeholder="Participant's Name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Gmail Address</label>
+                        <input type="email" id="crud_gmail" required placeholder="participant@gmail.com">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label>Enrollment Number</label>
+                            <input type="text" id="crud_enrollment" required placeholder="e.g. 1202300...">
+                        </div>
+                        <div class="form-group">
+                            <label>Contact Number</label>
+                            <input type="text" id="crud_contact" required placeholder="+91">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label>Department</label>
+                            <input type="text" id="crud_dept" required placeholder="CSE (IoT)">
+                        </div>
+                        <div class="form-group">
+                            <label>Year</label>
+                            <select id="crud_year" required>
+                                <option value="1st">1st Year</option>
+                                <option value="2nd">2nd Year</option>
+                                <option value="3rd">3rd Year</option>
+                                <option value="4th">4th Year</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Initial Passcode (For their Digital ID login)</label>
+                        <input type="password" id="crud_password" required minlength="6" placeholder="Assign temporary 6+ digit code">
+                    </div>
+
+                    <button type="submit" id="btn-submit-node" class="btn-primary" style="width: 100%; margin-top: 10px;">AUTHORIZE CREATION</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="comms-modal" class="modal-overlay" style="z-index: 1001;">
+        </div>
+
+    <script type="module">
+        import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
+        import { apiClient } from '../../scripts/api/api-client.js';
+
+        monitorAuthState(true, ['Volunteer']);
+
+        const eventRoutes = {
+            'event_codeshield': '../events/codeshield.html',
+            'event_digital_dilemma': '../events/digital-dilemma.html',
+            'event_cyber_visionary': '../events/cyber-visionary.html',
+            'event_packet_hijackers': '../events/packet-hijackers.html',
+            'event_cyber_canvas': '../events/cyber-canvas.html'
+        };
+
+        const assignedEvent = sessionStorage.getItem("assignedEvent");
+        const eventDisplay = document.getElementById('assigned-event-display');
+        const btnOpenEvent = document.getElementById('btn-open-event');
+        const btnViewRoster = document.getElementById('btn-view-roster');
+        const navEventLink = document.getElementById('nav-event-link');
+        const warningBox = document.getElementById('no-assignment-warning');
+        
+        // Cache event configuration for Team UI Logic
+        let eventConfigCache = null;
+
+        if (assignedEvent && eventRoutes[assignedEvent]) {
+            const formattedName = assignedEvent.replace('event_', '').replace('_', ' ').toUpperCase();
+            eventDisplay.innerText = formattedName;
+            
+            const targetUrl = eventRoutes[assignedEvent];
+            btnOpenEvent.style.display = 'block';
+            btnOpenEvent.onclick = () => window.location.href = targetUrl;
+            
+            btnViewRoster.style.display = 'block';
+            navEventLink.style.display = 'block';
+            navEventLink.querySelector('a').href = targetUrl;
+
+            // Pre-fetch event configurations in the background
+            apiClient.fetchEvents().then(events => {
+                eventConfigCache = events.find(e => e.id === assignedEvent || e.event_id === assignedEvent);
+            }).catch(e => console.error("Grid Sync Error:", e));
+
+        } else {
+            eventDisplay.innerText = "UNASSIGNED";
+            eventDisplay.style.color = "#ff4444";
+            warningBox.style.display = "block";
+        }
+
+        document.getElementById('btn-open-scanner').onclick = () => {
+            window.location.href = '../participant/scanner.html';
+        };
+
+        document.getElementById('logout-btn').addEventListener('click', () => logoutUser());
+
+        // CRM Modal Logic & State Management
+        const rosterModal = document.getElementById('roster-modal');
+        const addNodeModal = document.getElementById('add-node-modal');
+        const commsModal = document.getElementById('comms-modal');
+        const tbody = document.getElementById('roster-table-body');
+        let currentRosterData = [];
+
+        // Roster Render
+        btnViewRoster.addEventListener('click', async () => {
+            const formattedName = assignedEvent.replace('event_', '').replace('_', ' ').toUpperCase();
+            document.getElementById('modal-event-title').innerText = `Roster: ${formattedName}`;
+            rosterModal.style.display = 'flex';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Fetching secure data via API...</td></tr>';
+            
+            try {
+                currentRosterData = await apiClient.fetchEventRoster(assignedEvent);
+                renderRosterTable(currentRosterData);
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="5" style="color:#ff4444; text-align:center;">Failed to fetch roster: ${error.message}</td></tr>`;
+            }
+        });
+
+        // Robust DOM Rendering with Event Delegation hooks
+        function renderRosterTable(data) {
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No participants registered yet.</td></tr>';
+                return;
+            }
+            data.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="team-id-badge">${p.team_id || 'INDIVIDUAL'}</span></td>
+                    <td><strong style="color: #fff;">${p.full_name}</strong></td>
+                    <td>${p.gmail}</td>
+                    <td>${p.department} (Yr ${p.academic_year})</td>
+                    <td>
+                        <button class="btn-action-edit" data-id="${p.participant_id || p.id}">EDIT</button>
+                        <button class="btn-action-revoke" data-id="${p.participant_id || p.id}" data-name="${p.full_name}">REVOKE</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Live Search Filter
+        document.getElementById('roster-search').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = currentRosterData.filter(p => 
+                (p.full_name && p.full_name.toLowerCase().includes(query)) ||
+                (p.team_id && p.team_id.toLowerCase().includes(query)) ||
+                (p.gmail && p.gmail.toLowerCase().includes(query))
+            );
+            renderRosterTable(filtered);
+        });
+
+        // ---------------------------------------------------------
+        // PHASE 1 & 2: THE CREATE NODE PIPELINE
+        // ---------------------------------------------------------
+        
+        // Open Add Node Modal and setup Team UI
+        document.getElementById('btn-open-add-node').addEventListener('click', () => {
+            document.getElementById('add-node-form').reset();
+            
+            // Check cache to see if teams are allowed
+            const maxTeam = eventConfigCache ? parseInt(eventConfigCache.max_team_size || 1) : 1;
+            document.getElementById('crud-team-section').style.display = maxTeam > 1 ? 'block' : 'none';
+            document.getElementById('crud-create-team-ui').style.display = 'block';
+            document.getElementById('crud-join-team-ui').style.display = 'none';
+
+            addNodeModal.style.display = 'flex';
+        });
+
+        // Toggle Create/Join Team UI
+        document.getElementsByName('crud_team_option').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                document.getElementById('crud-create-team-ui').style.display = e.target.value === 'create' ? 'block' : 'none';
+                document.getElementById('crud-join-team-ui').style.display = e.target.value === 'join' ? 'block' : 'none';
+            });
+        });
+
+        // Handle Add Node Submission (Optimistic UI Approach)
+        document.getElementById('add-node-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit-node');
+            const originalText = btn.innerText;
+            btn.innerText = "FORGING IDENTITY...";
+            btn.disabled = true;
+
+            try {
+                // 1. Gather Payload (Hardcoding the event_id for security)
+                let registrationData = {
+                    event_id: assignedEvent, 
+                    full_name: document.getElementById('crud_full_name').value,
+                    gmail: document.getElementById('crud_gmail').value.toLowerCase().trim(),
+                    enrollment_number: document.getElementById('crud_enrollment').value,
+                    department: document.getElementById('crud_dept').value,
+                    academic_year: document.getElementById('crud_year').value,
+                    contact_number: document.getElementById('crud_contact').value,
+                    is_external: false, // Defaulting to internal for simplicity in dashboard
+                    password: document.getElementById('crud_password').value 
+                };
+
+                // 2. Handle Team Logic if applicable
+                const maxTeam = eventConfigCache ? parseInt(eventConfigCache.max_team_size || 1) : 1;
+                let finalTeamId = "INDIVIDUAL";
+
+                if (maxTeam > 1) {
+                    const teamOption = document.querySelector('input[name="crud_team_option"]:checked').value;
+                    if (teamOption === 'create') {
+                        btn.innerText = "GENERATING TEAM...";
+                        const teamName = document.getElementById('crud_team_name').value;
+                        const teamData = await apiClient.createTeam(assignedEvent, teamName);
+                        finalTeamId = teamData.team_id;
+                    } else {
+                        finalTeamId = document.getElementById('crud_team_id').value.trim();
+                    }
+                }
+                registrationData.team_id = finalTeamId;
+
+                // 3. Fire to backend via the API client. 
+                // Note: The backend MUST handle Firebase Auth creation for this endpoint
+                // to prevent logging the volunteer out on the frontend.
+                btn.innerText = "REGISTERING...";
+                const response = await apiClient.registerParticipant(registrationData);
+
+                // 4. Optimistic UI Update: Push to state array and re-render!
+                currentRosterData.push({
+                    participant_id: response.participant_id || Date.now().toString(),
+                    team_id: finalTeamId,
+                    full_name: registrationData.full_name,
+                    gmail: registrationData.gmail,
+                    department: registrationData.department,
+                    academic_year: registrationData.academic_year
+                });
+                
+                renderRosterTable(currentRosterData);
+                
+                alert(`Success: ${registrationData.full_name} has been securely added to the grid.`);
+                addNodeModal.style.display = 'none';
+
+            } catch (error) {
+                alert(`Creation Failed: ${error.message}`);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // ---------------------------------------------------------
+        // EVENT DELEGATION: Update & Delete Click Listeners
+        // ---------------------------------------------------------
+        tbody.addEventListener('click', (e) => {
+            // Revoke (Delete) Action
+            if (e.target.classList.contains('btn-action-revoke')) {
+                const pId = e.target.getAttribute('data-id');
+                const pName = e.target.getAttribute('data-name');
+                
+                if (confirm(`CRITICAL: Are you sure you want to permanently revoke access for ${pName}?`)) {
+                    // Placeholder for Phase 3 API call
+                    alert(`Phase 3 Hook: apiClient.removeParticipant('${pId}') will fire here.`);
+                    // Once successful, update optimistic UI:
+                    // currentRosterData = currentRosterData.filter(p => p.id !== pId);
+                    // renderRosterTable(currentRosterData);
+                }
+            }
+
+            // Edit Action
+            if (e.target.classList.contains('btn-action-edit')) {
+                const pId = e.target.getAttribute('data-id');
+                // Placeholder for Phase 3 Update form mapping
+                alert(`Phase 3 Hook: Open Edit Modal populated with data for ID: ${pId}`);
+            }
+        });
+
+        // Close Modals
+        document.getElementById('close-roster-modal').addEventListener('click', () => rosterModal.style.display = 'none');
+        document.getElementById('close-add-node-modal').addEventListener('click', () => addNodeModal.style.display = 'none');
+        
+    </script>
+</body>
+</html>

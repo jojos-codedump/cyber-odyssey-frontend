@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital ID - Cyber Odyssey 2.0</title>
+    <link rel="stylesheet" href="../../styles/global.css">
+    <link rel="stylesheet" href="../../styles/dashboards.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <h2>Cyber Odyssey</h2>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active">My Digital ID</a></li>
+                    <li><a href="../events/codeshield.html">Event Live Stream</a></li>
+                </ul>
+            </nav>
+            <button id="logout-btn" class="btn-logout">Logout</button>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header">
+                <h1>Participant Portal</h1>
+            </header>
+
+            <section class="id-card-section" style="display: flex; justify-content: center; align-items: center; min-height: 60vh;">
+                <div class="id-card" style="background: #111; border: 1px solid #333; padding: 30px; border-radius: 15px; width: 350px; text-align: center; box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);">
+                    <div style="border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+                        <span style="color: #00ffcc; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase;">Cyber Odyssey 2.0</span>
+                    </div>
+
+                    <div id="participant-details" style="margin-bottom: 25px;">
+                        <p style="color: #888;">Loading profile...</p>
+                    </div>
+
+                    <div id="qr-code-display" style="display: flex; justify-content: center; margin: 0 auto; background: #fff; padding: 10px; border-radius: 5px; width: fit-content; min-height: 200px;">
+                        </div>
+
+                    <div style="margin-top: 25px; font-size: 0.75rem; color: #555;">
+                        <p>Valid for entry check-in only. Do not share your Team ID.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module">
+        import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
+        import { renderDigitalID } from '../../scripts/utils/qr-generator.js';
+
+        // 1. Strict Role-Based Access Control 
+        monitorAuthState(true, ['Participant']);
+
+        // 2. Initialize the ID Card logic
+        // This handles the data fetching and immediate QR generation
+        renderDigitalID('qr-code-display', 'participant-details');
+
+        // 3. Setup Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            logoutUser();
+        });
+    </script>
+</body>
+</html>

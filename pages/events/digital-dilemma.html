@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Dilemma - Cyber Odyssey 2.0</title>
+    <link rel="stylesheet" href="../../styles/global.css">
+    <link rel="stylesheet" href="../../styles/dashboards.css">
+    <link rel="stylesheet" href="../../styles/brackets.css">
+</head>
+<body style="background-color: #050505;">
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <h2 style="color: #00ffcc;">Cyber Odyssey</h2>
+            <nav>
+                <ul id="nav-links">
+                    <li><a href="#" class="active">Debate Bracket</a></li>
+                    <li id="nav-back"><a href="../dashboards/admin.html">← Back to Overview</a></li>
+                </ul>
+            </nav>
+            <button id="logout-btn" class="btn-logout">Exit System</button>
+        </aside>
+
+        <main class="dashboard-content" style="display: flex; flex-direction: column; overflow-x: auto;">
+            <header class="dashboard-header">
+                <div>
+                    <h1 style="color: #00ffcc; margin-bottom: 5px;">Digital Dilemma</h1>
+                    <p style="color: #888; font-family: monospace;">DYNAMIC DEBATE MATRIX & TOURNAMENT TREE</p>
+                </div>
+                <div style="text-align: right;">
+                    <span id="role-indicator" style="background: #111; padding: 5px 10px; border: 1px solid #333; border-radius: 5px; color: #aaa; font-size: 0.8rem;">
+                        </span>
+                </div>
+            </header>
+
+            <section id="bracket-container" style="flex-grow: 1; padding: 20px; min-width: 800px;">
+                </section>
+        </main>
+    </div>
+
+    <script type="module">
+        import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
+        import { BracketRenderer } from '../../scripts/events/bracket-renderer.js';
+
+        // 1. Authorize Admins and Volunteers
+        monitorAuthState(true, ['Admin', 'Volunteer']);
+
+        // 2. Setup Role-Based UI and Logic
+        const role = sessionStorage.getItem("userRole");
+        const assignedEvent = sessionStorage.getItem("assignedEvent");
+        
+        // Handle Back button
+        const backLink = document.querySelector('#nav-back a');
+        if (role === 'Volunteer') backLink.href = '../dashboards/volunteer.html';
+
+        // Display role indicator
+        const roleIndicator = document.getElementById('role-indicator');
+        roleIndicator.innerText = `ACCESS LEVEL: ${role.toUpperCase()}`;
+        if (role === 'Volunteer' && assignedEvent === 'event_digital_dilemma') {
+            roleIndicator.style.borderColor = '#00ffcc';
+            roleIndicator.style.color = '#00ffcc';
+        }
+
+        // 3. Initialize the Bracket Engine
+        // Only allow clicking/advancing if the user is a Volunteer specifically assigned to Digital Dilemma
+        const canEditBracket = role === 'Volunteer' && assignedEvent === 'event_digital_dilemma';
+        
+        const renderer = new BracketRenderer('bracket-container', 'event_digital_dilemma', canEditBracket);
+        renderer.initialize();
+
+        // 4. Logout Handler
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            logoutUser();
+        });
+    </script>
+</body>
+</html>

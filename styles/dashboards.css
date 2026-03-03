@@ -1,0 +1,238 @@
+/* styles/dashboards.css */
+
+/* -----------------------------------------
+   MAIN LAYOUT ARCHITECTURE
+----------------------------------------- */
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    background-color: var(--bg-base);
+    position: relative;
+    overflow: hidden;
+}
+
+/* -----------------------------------------
+   SIDEBAR NAVIGATION
+----------------------------------------- */
+.sidebar {
+    width: 280px;
+    background-color: rgba(10, 10, 10, 0.95);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 30px 20px;
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    transition: all 0.3s ease;
+}
+
+.sidebar h2 {
+    color: var(--neon-cyan);
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px var(--neon-cyan-dim);
+}
+
+.sidebar nav {
+    flex-grow: 1;
+    margin-top: 40px;
+    overflow-y: auto;
+}
+
+.sidebar nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar nav ul li {
+    margin-bottom: 10px;
+}
+
+.sidebar nav ul li a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+    background: transparent;
+}
+
+.sidebar nav ul li a:hover,
+.sidebar nav ul li a.active {
+    color: var(--neon-cyan);
+    background: rgba(0, 255, 204, 0.05);
+    border-left-color: var(--neon-cyan);
+    box-shadow: inset 10px 0 20px -10px var(--neon-cyan-dim);
+}
+
+/* Logout Button Special Styling */
+.btn-logout {
+    background: transparent;
+    border: 1px solid var(--alert-red);
+    color: var(--alert-red);
+    padding: 12px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    font-weight: bold;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+}
+
+.btn-logout:hover {
+    background: rgba(255, 68, 68, 0.1);
+    box-shadow: 0 0 15px rgba(255, 68, 68, 0.3);
+}
+
+/* -----------------------------------------
+   MAIN CONTENT AREA
+----------------------------------------- */
+.dashboard-content {
+    flex-grow: 1;
+    padding: 40px 50px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    /* Entrance animation for a smooth loading experience */
+    opacity: 0;
+    transform: translateY(15px);
+    animation: dashboardFadeIn 0.5s ease-out forwards;
+}
+
+@keyframes dashboardFadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+}
+
+/* -----------------------------------------
+   WIDGETS & CARDS
+----------------------------------------- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.stat-card, .assignment-card {
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    padding: 25px;
+    border-radius: 8px;
+    border-top: 3px solid var(--border-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-top-color 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle scanline effect on cards */
+.stat-card::before, .assignment-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(rgba(0, 255, 204, 0.02) 1px, transparent 1px);
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.stat-card > *, .assignment-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    border-top-color: var(--neon-cyan);
+}
+
+/* -----------------------------------------
+   ANIMATIONS & UTILITIES
+----------------------------------------- */
+.pulse-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--neon-cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--neon-cyan);
+    animation: radarPulse 2s infinite;
+}
+
+@keyframes radarPulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 255, 204, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0); }
+}
+
+/* -----------------------------------------
+   MOBILE RESPONSIVENESS
+----------------------------------------- */
+@media (max-width: 900px) {
+    .dashboard-container {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .sidebar nav {
+        margin-top: 20px;
+    }
+
+    .sidebar nav ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .sidebar nav ul li {
+        margin-bottom: 0;
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .btn-logout {
+        margin-top: 15px;
+    }
+
+    .dashboard-content {
+        padding: 25px 20px;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .dashboard-header div {
+        text-align: left !important;
+        width: 100%;
+    }
+}

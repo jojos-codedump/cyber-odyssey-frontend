@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Judge Portal - Cyber Odyssey 2.0</title>
+    <link rel="stylesheet" href="../../styles/global.css">
+    <link rel="stylesheet" href="../../styles/dashboards.css">
+</head>
+<body style="background-color: #050505;">
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <h2 style="color: #00ffcc;">Cyber Odyssey</h2>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active">Scoring Portal</a></li>
+                    <li><a href="../events/cyber-canvas.html">View Cyber Canvas</a></li>
+                    <li><a href="../events/codeshield.html">View CodeShield</a></li>
+                </ul>
+            </nav>
+            <button id="logout-btn" class="btn-logout">Exit System</button>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header">
+                <div>
+                    <h1 style="color: #00ffcc; margin-bottom: 5px;">Evaluation Matrix</h1>
+                    <p style="color: #888; font-family: monospace;">SECURE SCORING & FEEDBACK PORTAL</p>
+                </div>
+                <div style="text-align: right;">
+                    <span id="event-indicator" style="background: #111; padding: 5px 10px; border: 1px solid #00ffcc; border-radius: 5px; color: #00ffcc; font-size: 0.8rem;">
+                        FETCHING ASSIGNMENT...
+                    </span>
+                </div>
+            </header>
+
+            <section class="scoring-section" style="background: #111; border: 1px solid #333; border-radius: 8px; padding: 30px; max-width: 600px;">
+                <h3 style="color: #fff; border-bottom: 1px dashed #444; padding-bottom: 10px; margin-bottom: 20px;">Submit Evaluation</h3>
+                
+                <form id="scoring-form">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label for="team_id" style="color: #aaa; display: block; margin-bottom: 5px;">Target Team ID:</label>
+                        <input type="text" id="team_id" required placeholder="e.g. TM-1042" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #00ffcc; font-family: monospace; border-radius: 4px;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label style="color: #aaa; display: block; margin-bottom: 5px;">Innovation</label>
+                            <input type="number" id="score_innovation" min="1" max="10" required class="score-input" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #aaa; display: block; margin-bottom: 5px;">Technical</label>
+                            <input type="number" id="score_technical" min="1" max="10" required class="score-input" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #aaa; display: block; margin-bottom: 5px;">Presentation</label>
+                            <input type="number" id="score_presentation" min="1" max="10" required class="score-input" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #fff;">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 25px;">
+                        <label for="feedback" style="color: #aaa; display: block; margin-bottom: 5px;">Judge Comments (Optional):</label>
+                        <textarea id="feedback" rows="4" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #fff; font-family: monospace; border-radius: 4px; resize: vertical;"></textarea>
+                    </div>
+
+                    <button type="submit" id="submit-score-btn" class="btn-primary" style="width: 100%;">COMMIT SCORE TO DATABASE</button>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script type="module">
+        import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
+        import { apiClient } from '../../scripts/api/api-client.js';
+
+        monitorAuthState(true, ['Judge']);
+
+        const assignedEvent = sessionStorage.getItem("assignedEvent");
+        const eventIndicator = document.getElementById('event-indicator');
+        
+        if (assignedEvent) {
+            const formattedName = assignedEvent.replace('event_', '').replace('_', ' ').toUpperCase();
+            eventIndicator.innerText = `ASSIGNED: ${formattedName}`;
+        }
+
+        const form = document.getElementById('scoring-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submit-score-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'TRANSMITTING PAYLOAD...';
+
+            const payload = {
+                team_id: document.getElementById('team_id').value,
+                scores: {
+                    innovation: parseInt(document.getElementById('score_innovation').value),
+                    technical: parseInt(document.getElementById('score_technical').value),
+                    presentation: parseInt(document.getElementById('score_presentation').value)
+                },
+                feedback: document.getElementById('feedback').value,
+                event_id: assignedEvent
+            };
+
+            try {
+                await apiClient.submitEvaluation(payload);
+                alert(`Evaluation for ${payload.team_id} successfully logged in the grid.`);
+                form.reset();
+            } catch (error) {
+                alert(`Transmission error: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'COMMIT SCORE TO DATABASE';
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => logoutUser());
+    </script>
+</body>
+</html>

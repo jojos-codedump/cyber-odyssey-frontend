@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Odyssey 2.0 | Enter the Grid</title>
+    <link rel="stylesheet" href="styles/global.css">
+    
+    <style>
+        /* Lightweight Landing Page Specific Styles */
+        body {
+            margin: 0;
+            background-color: #050505;
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: hidden;
+        }
+
+        /* Navigation Navbar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 50px;
+            background: rgba(5, 5, 5, 0.9);
+            border-bottom: 1px solid #111;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+        }
+
+        .navbar .logo {
+            font-size: 1.5rem;
+            color: #00ffcc;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+            text-decoration: none;
+            letter-spacing: 2px;
+        }
+
+        .navbar .nav-links a {
+            color: #aaa;
+            text-decoration: none;
+            margin-left: 30px;
+            transition: color 0.3s ease;
+        }
+
+        .navbar .nav-links a:hover {
+            color: #00ffcc;
+        }
+
+        .btn-outline {
+            border: 1px solid #00ffcc;
+            color: #00ffcc;
+            padding: 8px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline:hover {
+            background: #00ffcc;
+            color: #000;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 20px;
+            background: radial-gradient(circle at center, #111 0%, #050505 100%);
+            position: relative;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            pointer-events: none;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            color: #fff;
+            margin-bottom: 10px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+        }
+
+        .hero h1 span {
+            color: #00ffcc;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #888;
+            max-width: 600px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .btn-glow {
+            background: #00ffcc;
+            color: #000;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            font-family: inherit;
+        }
+
+        .btn-glow:hover {
+            box-shadow: 0 0 40px rgba(0, 255, 204, 0.6);
+            transform: translateY(-2px);
+        }
+
+        /* Events Grid Showcase */
+        .events-section {
+            padding: 100px 50px;
+            background: #0a0a0a;
+        }
+
+        .section-title {
+            text-align: center;
+            color: #fff;
+            font-size: 2.5rem;
+            margin-bottom: 50px;
+            letter-spacing: 2px;
+        }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Upgraded to act as clickable anchor links */
+        .event-card {
+            display: block;
+            text-decoration: none;
+            background: #111;
+            border: 1px solid #222;
+            padding: 30px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border-top: 3px solid #333;
+            cursor: pointer;
+        }
+
+        .event-card:hover {
+            border-top-color: #00ffcc;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background: #151515;
+        }
+
+        .event-card h3 {
+            color: #00ffcc;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .event-card p {
+            color: #aaa;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .event-card .tag {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 5px 10px;
+            background: rgba(0, 255, 204, 0.1);
+            color: #00ffcc;
+            font-size: 0.8rem;
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            border-radius: 4px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            background: #050505;
+            color: #555;
+            border-top: 1px solid #111;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="#" class="logo">CYBER_ODYSSEY</a>
+        <div class="nav-links">
+            <a href="#events">The Events</a>
+            <a href="pages/auth/login.html" class="btn-outline">System Login</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Welcome to the <span>Grid</span></h1>
+        <p>The ultimate technical symposium. Compete in high-stakes hackathons, engage in digital debates, and exploit network vulnerabilities. Secure your node today.</p>
+        <a href="pages/auth/register.html" class="btn-glow">INITIALIZE REGISTRATION</a>
+    </section>
+
+    <section id="events" class="events-section">
+        <h2 class="section-title">ACTIVE DIRECTORIES</h2>
+        
+        <div class="events-grid">
+            <a href="pages/events/codeshield.html" class="event-card">
+                <h3>CodeShield</h3>
+                <p>A grueling 7-hour hackathon where developers build secure, resilient software solutions under intense pressure. Defend your codebase.</p>
+                <span class="tag">DEV / SECURITY</span>
+            </a>
+
+            <a href="pages/events/packet-hijackers.html" class="event-card">
+                <h3>Packet Hijackers</h3>
+                <p>An active Capture The Flag (CTF) and network exploitation arena. Find the vulnerabilities, bypass the firewalls, and capture the root flag.</p>
+                <span class="tag">PEN-TESTING / CTF</span>
+            </a>
+
+            <a href="pages/events/cyber-visionary.html" class="event-card">
+                <h3>Cyber Visionary</h3>
+                <p>An ideathon structured as a dynamic tournament matrix. Pitch your most innovative tech solutions and advance through the bracket.</p>
+                <span class="tag">IDEATHON</span>
+            </a>
+
+            <a href="pages/events/digital-dilemma.html" class="event-card">
+                <h3>Digital Dilemma</h3>
+                <p>A fast-paced tech debate tournament. Argue the ethics, mechanics, and future of artificial intelligence, privacy, and system architectures.</p>
+                <span class="tag">DEBATE</span>
+            </a>
+
+            <a href="pages/events/cyber-canvas.html" class="event-card">
+                <h3>Cyber Canvas</h3>
+                <p>A digital poster presentation gallery. Showcase complex technological concepts and research through compelling visual design.</p>
+                <span class="tag">DESIGN / PRESENTATION</span>
+            </a>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Cyber Odyssey. Securely managed via Render & Firebase.</p>
+    </footer>
+
+</body>
+</html>

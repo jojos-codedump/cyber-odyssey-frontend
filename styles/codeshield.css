@@ -1,0 +1,144 @@
+/* styles/codeshield.css */
+
+/* -----------------------------------------
+   MATRIX CANVAS BACKGROUND 
+----------------------------------------- */
+#matrix-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1; /* Places the canvas firmly behind the dashboard content */
+    pointer-events: none; /* Ensures clicks pass through to the buttons below */
+    opacity: 0.85; /* Slight fade so it doesn't overpower the text */
+}
+
+/* -----------------------------------------
+   TIMER & UI CONTAINERS [cite: 148-156]
+----------------------------------------- */
+.timer-container {
+    background: rgba(5, 5, 5, 0.75);
+    border: 1px solid var(--neon-cyan);
+    box-shadow: 0 0 30px var(--neon-cyan-dim), inset 0 0 20px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 10px;
+    padding: 60px 80px;
+    text-align: center;
+    position: relative;
+    z-index: 20;
+    animation: containerBootUp 1s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes containerBootUp {
+    0% { transform: scale(0.9) translateY(20px); opacity: 0; box-shadow: 0 0 0 var(--neon-cyan-dim); }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+#countdown-display {
+    font-size: 7rem;
+    font-weight: bold;
+    color: var(--neon-cyan);
+    font-family: var(--font-mono);
+    text-shadow: 0 0 20px var(--neon-cyan);
+    margin-bottom: 30px;
+    letter-spacing: 5px;
+    /* tabular-nums stops the timer from "jittering" horizontally when digits change */
+    font-variant-numeric: tabular-nums; 
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+/* -----------------------------------------
+   ROBUST GLITCH TEXT ANIMATION 
+----------------------------------------- */
+.glitch-text {
+    position: relative;
+    display: inline-block;
+    color: var(--text-main);
+    font-weight: bold;
+}
+
+/* We use pseudo-elements to duplicate the text and shift the RGB channels */
+.glitch-text::before,
+.glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+}
+
+.glitch-text::before {
+    left: 3px;
+    text-shadow: -2px 0 var(--alert-red);
+    animation: glitch-anim-1 3s infinite linear alternate-reverse;
+}
+
+.glitch-text::after {
+    left: -3px;
+    text-shadow: -2px 0 var(--neon-cyan);
+    animation: glitch-anim-2 2.5s infinite linear alternate-reverse;
+}
+
+/* Clip-path generates the horizontal slicing effect */
+@keyframes glitch-anim-1 {
+    0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); }
+    20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); }
+    40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); }
+    60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
+    80% { clip-path: inset(10% 0 70% 0); transform: translate(-1px, 1px); }
+    100% { clip-path: inset(30% 0 50% 0); transform: translate(1px, -1px); }
+}
+
+@keyframes glitch-anim-2 {
+    0% { clip-path: inset(10% 0 60% 0); transform: translate(2px, -1px); }
+    20% { clip-path: inset(30% 0 20% 0); transform: translate(-2px, 2px); }
+    40% { clip-path: inset(70% 0 10% 0); transform: translate(2px, -2px); }
+    60% { clip-path: inset(20% 0 50% 0); transform: translate(-1px, 1px); }
+    80% { clip-path: inset(50% 0 30% 0); transform: translate(1px, -1px); }
+    100% { clip-path: inset(5% 0 80% 0); transform: translate(-2px, 1px); }
+}
+
+/* Overriding the glitch for specific elements */
+h1.glitch-text {
+    color: #fff;
+}
+h2.glitch-text {
+    color: var(--neon-cyan);
+    font-size: 1.5rem;
+}
+
+/* -----------------------------------------
+   RESPONSIVE MEDIA QUERIES
+----------------------------------------- */
+@media (max-width: 900px) {
+    #countdown-display {
+        font-size: 5rem; /* Shrink timer for tablets */
+    }
+    .timer-container {
+        padding: 40px 30px;
+    }
+}
+
+@media (max-width: 500px) {
+    #countdown-display {
+        font-size: 3.5rem; /* Shrink timer for mobile phones */
+        letter-spacing: 2px;
+    }
+    .timer-container {
+        padding: 30px 15px;
+        width: 90%; /* Let it breathe on small screens */
+    }
+    .timer-container h1.glitch-text {
+        font-size: 1.1rem !important; /* Scale down the "SYSTEM COMPROMISE IN:" text */
+    }
+    .timer-controls {
+        flex-direction: column; /* Stack the buttons vertically on mobile */
+    }
+    .timer-controls button {
+        width: 100%;
+    }
+}
