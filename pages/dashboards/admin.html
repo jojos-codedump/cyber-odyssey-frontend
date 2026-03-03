@@ -171,6 +171,7 @@
                         <thead>
                             <tr>
                                 <th>Staff Email</th>
+                                <th>Clearance Role</th>
                                 <th>Active Module Assignment</th>
                                 <th>Security Actions</th>
                             </tr>
@@ -233,9 +234,7 @@
     <script type="module">
         import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
         import { auth, db } from '../../scripts/auth/firebase-config.js'; 
-        import { 
-            collection, onSnapshot, getDocs, doc, updateDoc, deleteDoc, query, where 
-        } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { apiClient } from '../../scripts/api/api-client.js';
 
         // 1. Strict Role-Based Access Enforcement
@@ -257,54 +256,51 @@
             }
         });
 
-        // 2. Live Volunteer Directory (CRUD)
-        const staffTable = document.getElementById('volunteer-table-body');
-        const usersRef = collection(db, "users");
-        const volunteerQuery = query(usersRef, where("role", "==", "Volunteer"));
-        
-        onSnapshot(volunteerQuery, (snapshot) => {
-            staffTable.innerHTML = '';
-            snapshot.forEach(vDoc => {
-                const vData = vDoc.data();
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><span style="color: #fff;">${vData.email}</span></td>
-                    <td>
-                        <select class="assignment-updater" data-uid="${vDoc.id}">
-                            <option value="event_codeshield" ${vData.assigned_event === 'event_codeshield' ? 'selected' : ''}>CodeShield</option>
-                            <option value="event_digital_dilemma" ${vData.assigned_event === 'event_digital_dilemma' ? 'selected' : ''}>Digital Dilemma</option>
-                            <option value="event_cyber_visionary" ${vData.assigned_event === 'event_cyber_visionary' ? 'selected' : ''}>Cyber Visionary</option>
-                            <option value="event_cyber_canvas" ${vData.assigned_event === 'event_cyber_canvas' ? 'selected' : ''}>Cyber Canvas</option>
-                            <option value="event_packet_hijackers" ${vData.assigned_event === 'event_packet_hijackers' ? 'selected' : ''}>Packet Hijackers</option>
-                        </select>
-                    </td>
-                    <td>
-                        <button class="btn-danger revoke-btn" data-uid="${vDoc.id}">REVOKE ACCESS</button>
-                    </td>
-                `;
-                staffTable.appendChild(tr);
-            });
+        // 2. Live Volunteer Directory (API FETCH)
+        async function loadStaffData() {
+            const staffTable = document.getElementById('volunteer-table-body');
+            staffTable.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #888;">Fetching active staff directory...</td></tr>';
+            
+            try {
+                const staffList = await apiClient.fetchActiveStaff();
+                staffTable.innerHTML = '';
+                
+                if (staffList.length === 0) {
+                    staffTable.innerHTML = '<tr><td colspan="4" style="text-align:center;">No staff nodes detected in the grid.</td></tr>';
+                    return;
+                }
+                
+                staffList.forEach(staff => {
+                    const tr = document.createElement('tr');
+                    
+                    // Determine Role Badge Styling
+                    const roleBadge = staff.role === 'Admin' 
+                        ? '<span class="badge-cyan" style="color:#ffcc00; border-color:#ffcc00;">Admin</span>' 
+                        : '<span class="badge-cyan">Volunteer</span>';
+                        
+                    // Format Event Name
+                    const eventName = staff.assigned_event 
+                        ? staff.assigned_event.replace('event_', '').replace('_', ' ').toUpperCase() 
+                        : 'MASTER CONTROL';
+                    
+                    tr.innerHTML = `
+                        <td><span style="color: #fff;">${staff.email}</span></td>
+                        <td>${roleBadge}</td>
+                        <td><span style="color: #aaa;">${eventName}</span></td>
+                        <td>
+                            <button class="btn-danger revoke-btn" onclick="alert('Revoke capability is locked for Phase 4.')">REVOKE ACCESS</button>
+                        </td>
+                    `;
+                    staffTable.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Staff Fetch Error:", error);
+                staffTable.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ff4444;">Failed to load staff matrix. Check API connection.</td></tr>`;
+            }
+        }
 
-            document.querySelectorAll('.assignment-updater').forEach(select => {
-                select.onchange = async (e) => {
-                    const uid = e.target.getAttribute('data-uid');
-                    try {
-                        await updateDoc(doc(db, "users", uid), { assigned_event: e.target.value });
-                    } catch (err) { alert("Assignment update failed."); }
-                };
-            });
-
-            document.querySelectorAll('.revoke-btn').forEach(btn => {
-                btn.onclick = async (e) => {
-                    if (confirm("CRITICAL: REVOKE SECURITY CLEARANCE? This will terminate their session immediately.")) {
-                        const uid = e.target.getAttribute('data-uid');
-                        try {
-                            await deleteDoc(doc(db, "users", uid));
-                        } catch (err) { alert("Revocation failed."); }
-                    }
-                };
-            });
-        });
+        // Initialize directory on load
+        document.addEventListener('DOMContentLoaded', loadStaffData);
 
         // 3. CRM Roster Logic
         let currentActiveEventId = null;
@@ -442,6 +438,10 @@
                 
                 alert(`Access Granted: Volunteer ${emailInput} successfully integrated into the grid.`);
                 e.target.reset(); // Clear the form on success
+                
+                // Refresh the Active Staff Directory immediately
+                await loadStaffData();
+                
             } catch (error) {
                 alert(`Authorization Failed: ${error.message}`);
             } finally {

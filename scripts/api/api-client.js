@@ -205,5 +205,17 @@ export const apiClient = {
             throw new Error(err.detail || 'Failed to revoke node access.');
         }
         return response.json();
+    },
+
+    /**
+     * PHASE 4: FETCH STAFF
+     * Fetches the active staff roster (Admins and Volunteers)
+     */
+    async fetchActiveStaff() {
+        const response = await fetch(`${BASE_URL}/admin/staff`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) throw new Error('Failed to fetch staff matrix.');
+        return response.json();
     }
 };
