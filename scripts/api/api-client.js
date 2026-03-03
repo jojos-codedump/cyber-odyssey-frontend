@@ -217,5 +217,20 @@ export const apiClient = {
         });
         if (!response.ok) throw new Error('Failed to fetch staff matrix.');
         return response.json();
+    },
+
+    // =========================================================
+    // NEW PHASE 5: GLOBAL ATTENDANCE LOGS
+    // =========================================================
+
+    /**
+     * Fetches the real-time stream of QR scan check-ins
+     */
+    async fetchAttendanceLogs() {
+        const response = await fetch(`${BASE_URL}/admin/attendance/logs`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) throw new Error('Failed to fetch attendance logs.');
+        return response.json();
     }
 };

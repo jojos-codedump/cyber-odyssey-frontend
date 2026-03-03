@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Access Logs - Cyber Odyssey 2.0</title>
+    <link rel="stylesheet" href="../../styles/global.css">
+    <link rel="stylesheet" href="../../styles/dashboards.css">
+    <style>
+        /* Cyberpunk Terminal Aesthetics */
+        .terminal-section {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-left: 4px solid var(--neon-cyan);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.05);
+        }
+        
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #333;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .terminal-header h2 { color: #fff; margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px;}
+        
+        /* Live Sync Indicator */
+        .live-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #00ffcc;
+            font-family: monospace;
+            font-size: 0.85rem;
+            background: rgba(0, 255, 204, 0.1);
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 204, 0.3);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #00ffcc;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 255, 204, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0); }
+        }
+
+        /* Log Table */
+        .log-table-container { overflow-x: auto; }
+        .log-table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.9rem; }
+        .log-table th { text-align: left; padding: 12px 10px; background: #111; color: #888; border-bottom: 1px solid #333; text-transform: uppercase; }
+        .log-table td { padding: 12px 10px; border-bottom: 1px dashed #222; color: #ccc; }
+        .log-table tr:hover { background: rgba(0, 255, 204, 0.03); }
+        
+        .log-time { color: #ffcc00; font-weight: bold; }
+        .log-event { color: #00ffcc; }
+        .log-uid { color: #666; font-size: 0.8rem; }
+
+        /* Media Queries for Mobile Readiness */
+        @media (max-width: 768px) {
+            .terminal-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .log-table { font-size: 0.8rem; }
+            .log-table th, .log-table td { padding: 8px 5px; }
+            .hide-on-mobile { display: none; } /* Use to hide less critical columns on small screens */
+        }
+    </style>
+</head>
+<body style="background-color: #050505;">
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <h2 style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0,255,204,0.3);">Cyber Odyssey</h2>
+            <nav>
+                <ul id="dynamic-nav">
+                    <li><a href="../participant/scanner.html">QR Scanner</a></li>
+                    <li><a href="#" class="active">Global Access Logs</a></li>
+                </ul>
+            </nav>
+            <button id="logout-btn" class="btn-logout">Terminate Session</button>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header" style="margin-bottom: 20px;">
+                <div>
+                    <h1 style="color: var(--neon-cyan); margin-bottom: 5px;">Security Feed</h1>
+                    <p style="color: #888; font-family: monospace;">REAL-TIME ATTENDANCE LEDGER</p>
+                </div>
+            </header>
+
+            <section class="terminal-section">
+                <div class="terminal-header">
+                    <h2>Latest Network Ingresses</h2>
+                    <div class="live-status">
+                        <div class="pulse-dot"></div>
+                        <span id="sync-status-text">LIVE SYNC ACTIVE</span>
+                    </div>
+                </div>
+
+                <div class="log-table-container">
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp (IST)</th>
+                                <th>Participant Name</th>
+                                <th>Target Module</th>
+                                <th class="hide-on-mobile">Scanned By (Node UID)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-table-body">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: #666; padding: 30px;">
+                                    Establishing secure uplink to log servers...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module">
+        import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
+        import { apiClient } from '../../scripts/api/api-client.js';
+
+        // Secure this page for both Admins and Volunteers
+        monitorAuthState(true, ['Admin', 'Volunteer']);
+
+        // Format Event Names
+        const eventFormatMap = {
+            'event_codeshield': 'CodeShield',
+            'event_digital_dilemma': 'Digital Dilemma',
+            'event_cyber_visionary': 'Cyber Visionary',
+            'event_cyber_canvas': 'Cyber Canvas',
+            'event_packet_hijackers': 'Packet Hijackers'
+        };
+
+        const tbody = document.getElementById('log-table-body');
+        const syncText = document.getElementById('sync-status-text');
+
+        // Main Fetch and Render Logic
+        async function fetchAndRenderLogs() {
+            try {
+                const logs = await apiClient.fetchAttendanceLogs();
+                
+                if (logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #666; padding: 20px;">No network ingresses detected yet.</td></tr>';
+                    return;
+                }
+
+                // Clear current table
+                tbody.innerHTML = '';
+
+                logs.forEach(log => {
+                    const tr = document.createElement('tr');
+                    
+                    // Format Timestamp cleanly
+                    const dateObj = new Date(log.timestamp);
+                    const timeString = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                    
+                    const eventName = eventFormatMap[log.event_id] || log.event_id.replace('event_', '').toUpperCase();
+
+                    tr.innerHTML = `
+                        <td class="log-time">${timeString}</td>
+                        <td style="color: #fff; font-weight: bold;">${log.participant_name}</td>
+                        <td class="log-event">${eventName}</td>
+                        <td class="hide-on-mobile log-uid">${log.scanned_by_uid}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                // Update Sync Status
+                const now = new Date();
+                syncText.innerText = `SYNCED @ ${now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+                
+            } catch (error) {
+                console.error("Log Fetch Error:", error);
+                syncText.innerText = "UPLINK DEGRADED";
+                syncText.style.color = "#ff4444";
+                document.querySelector('.pulse-dot').style.backgroundColor = "#ff4444";
+            }
+        }
+
+        // ---------------------------------------------------------
+        // DYNAMIC NAVIGATION LOGIC
+        // ---------------------------------------------------------
+        // Adjust the sidebar "Back" button depending on their role
+        const role = sessionStorage.getItem('userRole');
+        const navUl = document.getElementById('dynamic-nav');
+        
+        if (role === 'Admin') {
+            const backLink = document.createElement('li');
+            backLink.innerHTML = `<a href="admin.html">« Command Center</a>`;
+            navUl.insertBefore(backLink, navUl.firstChild);
+        } else if (role === 'Volunteer') {
+            const backLink = document.createElement('li');
+            backLink.innerHTML = `<a href="volunteer.html">« Volunteer Portal</a>`;
+            navUl.insertBefore(backLink, navUl.firstChild);
+        }
+
+        // ---------------------------------------------------------
+        // INITIALIZATION & SHORT-POLLING
+        // ---------------------------------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAndRenderLogs(); // Initial fetch
+            
+            // Short Polling: Fetch new logs every 5 seconds
+            setInterval(fetchAndRenderLogs, 5000); 
+        });
+
+        document.getElementById('logout-btn').onclick = logoutUser;
+    </script>
+</body>
+</html>
