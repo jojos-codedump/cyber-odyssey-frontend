@@ -3,133 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Scanner - Cyber Odyssey 2.0</title>
+    <title>Hybrid Scanner - Cyber Odyssey 2.0</title>
     <link rel="stylesheet" href="../../styles/global.css">
     <link rel="stylesheet" href="../../styles/dashboards.css">
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        .scanner-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #reader { width: 100%; border: none !important; }
+        #reader__scan_region { background: #000; }
+        
+        .scan-status {
+            padding: 20px;
+            text-align: center;
+            font-family: monospace;
+            border-top: 1px solid #333;
+        }
+
+        .status-idle { color: #888; }
+        .status-processing { color: var(--neon-cyan); animation: blink 1s infinite; }
+        .status-success { color: #00ffcc; border: 1px solid #00ffcc; background: rgba(0, 255, 204, 0.1); padding: 10px; border-radius: 4px; }
+        .status-error { color: #ff4444; border: 1px solid #ff4444; background: rgba(255, 68, 68, 0.1); padding: 10px; border-radius: 4px; }
+
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        /* Mobile Optimization */
+        @media (max-width: 600px) {
+            .dashboard-content { padding: 15px; }
+            .scanner-container { border-radius: 0; border-left: none; border-right: none; }
+        }
+    </style>
 </head>
 <body style="background-color: #050505;">
 
     <div class="dashboard-container">
         <aside class="sidebar">
-            <h2 style="color: #00ffcc; text-shadow: 0 0 10px rgba(0,255,204,0.3);">Cyber Odyssey</h2>
+            <h2 style="color: var(--neon-cyan);">Cyber Odyssey</h2>
             <nav>
-                <ul id="nav-links"></ul>
+                <ul>
+                    <li><a href="#" id="back-link">« Back to Portal</a></li>
+                    <li><a href="../dashboards/attendance.html">Live Access Logs</a></li>
+                    <li><a href="#" class="active">QR Scanner</a></li>
+                </ul>
             </nav>
-            <button id="logout-btn" class="btn-logout">Exit System</button>
+            <button id="logout-btn" class="btn-logout">Terminate</button>
         </aside>
 
-        <main class="dashboard-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-            <div class="scanner-wrapper" style="width: 100%; max-width: 500px; text-align: center;">
-                <h1 style="color: #00ffcc; margin-bottom: 10px;">Security Check-In</h1>
-                <p id="scan-feedback" style="margin-bottom: 20px; font-weight: bold; letter-spacing: 1px;">INITIALIZING HARDWARE...</p>
-                
-                <div style="width: 100%; border: 2px solid #333; border-radius: 8px; overflow: hidden; box-shadow: 0 0 20px rgba(0, 255, 204, 0.1); background: #000; position: relative;">
-                    <video id="native-camera" playsinline autoplay muted style="width: 100%; height: auto; display: none;"></video>
-                    
-                    <div id="reader" style="width: 100%; display: none;"></div>
+        <main class="dashboard-content">
+            <header class="dashboard-header" style="margin-bottom: 20px;">
+                <div>
+                    <h1 style="color: var(--neon-cyan);">Node Validator</h1>
+                    <p id="assigned-module-display" style="color: #888; font-family: monospace;">INITIALIZING SENSORS...</p>
                 </div>
-                
-                <div style="margin-top: 20px; color: #888; font-size: 0.85rem;">
-                    <p id="engine-indicator">Booting optical sensors...</p>
+            </header>
+
+            <div class="scanner-container">
+                <div id="reader"></div>
+                <div class="scan-status" id="scan-feedback">
+                    <span class="status-idle">SYSTEM READY: AWAITING OPTICAL INPUT</span>
                 </div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: center;">
+                <p style="color: #444; font-size: 0.8rem; font-family: monospace;">ENCRYPTED UPLINK: RENDER-DB-01</p>
             </div>
         </main>
     </div>
 
     <script type="module">
         import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
-        import { auth } from '../../scripts/auth/firebase-config.js';
-        // Corrected import path for utils
-        import { handleScan } from '../../scripts/utils/scanner-debounce.js'; 
+        import { apiClient } from '../../scripts/api/api-client.js';
 
-        const fb = document.getElementById('scan-feedback');
-        const engineIndicator = document.getElementById('engine-indicator');
-        const nativeVideo = document.getElementById('native-camera');
-        const fallbackReader = document.getElementById('reader');
-
-        monitorAuthState(true, ['Admin', 'Volunteer']);
-
+        // 1. Security Access Logic
+        const user = await monitorAuthState(true, ['Admin', 'Volunteer']);
         const role = sessionStorage.getItem('userRole');
-        const nav = document.getElementById('nav-links');
-        if (nav) {
-            nav.innerHTML = role === 'Admin' 
-                ? `<li><a href="../dashboards/admin.html">Master Dashboard</a></li>`
-                : `<li><a href="../dashboards/volunteer.html">Event Dashboard</a></li>`;
+        const assignedEvent = sessionStorage.getItem('assignedEvent') || 'event_codeshield';
+        
+        // Update UI based on role
+        document.getElementById('assigned-module-display').innerText = `ACTIVE MODULE: ${assignedEvent.replace('event_', '').toUpperCase()}`;
+        document.getElementById('back-link').href = role === 'Admin' ? '../dashboards/admin.html' : '../dashboards/volunteer.html';
+
+        // 2. Scanner Logic
+        const feedback = document.getElementById('scan-feedback');
+        let isProcessing = false;
+
+        async function onScanSuccess(decodedText) {
+            if (isProcessing) return;
+            
+            try {
+                isProcessing = true;
+                feedback.innerHTML = `<span class="status-processing">SYNCHRONIZING WITH GRID...</span>`;
+
+                // The QR payload is the participant_id
+                const scanData = {
+                    participant_id: decodedText.trim(),
+                    event_id: assignedEvent,
+                    scanned_by_uid: user.uid
+                };
+
+                const result = await apiClient.logAttendanceScan(scanData);
+
+                // HANDLE SPECIFIC BACKEND STATUS CODES
+                if (result.status === 'duplicate') {
+                    feedback.innerHTML = `<div class="status-error">ACCESS DENIED: NODE ALREADY LOGGED</div>`;
+                    alert("DUPLICATE ENTRY: This participant has already checked in.");
+                } else if (result.status === 'success') {
+                    feedback.innerHTML = `<div class="status-success">ACCESS GRANTED: IDENTITY VERIFIED</div>`;
+                    // Brief pause to show success before resetting
+                    setTimeout(() => {
+                        feedback.innerHTML = `<span class="status-idle">AWAITING NEXT INPUT...</span>`;
+                        isProcessing = false;
+                    }, 3000);
+                    return; // Exit to prevent immediate re-processing
+                }
+
+            } catch (error) {
+                console.error("Scan Error:", error);
+                feedback.innerHTML = `<div class="status-error">ENCRYPTION ERROR: ${error.message}</div>`;
+                alert(`SCAN FAILED: ${error.message}`);
+            } finally {
+                // Ensure we can scan again after errors
+                setTimeout(() => { isProcessing = false; }, 2000);
+            }
         }
 
-        let nativeStream = null;
-        let detectionLoop = null;
-
-        auth.onAuthStateChanged(async (user) => {
-            if (!user) return;
-
-            // Check for Native OS Machine Learning Support
-            if ('BarcodeDetector' in window) {
-                engineIndicator.innerText = "Engine: Native OS Machine Learning (High Performance)";
-                engineIndicator.style.color = "#00ffcc";
-                nativeVideo.style.display = "block";
-
-                try {
-                    // FIX: Removed 'facingMode' so OBS Virtual Camera is permitted
-                    nativeStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { width: { ideal: 1280 } } 
-                    });
-                    nativeVideo.srcObject = nativeStream;
-
-                    const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-
-                    const scanFrame = async () => {
-                        if (nativeVideo.readyState === nativeVideo.HAVE_ENOUGH_DATA) {
-                            try {
-                                const barcodes = await barcodeDetector.detect(nativeVideo);
-                                if (barcodes.length > 0) {
-                                    handleScan(barcodes[0].rawValue, user.uid);
-                                }
-                            } catch (e) {}
-                        }
-                        detectionLoop = requestAnimationFrame(scanFrame);
-                    };
-
-                    nativeVideo.addEventListener('play', scanFrame);
-                    fb.innerText = "READY FOR SCAN";
-
-                } catch (err) {
-                    fb.innerText = `CAMERA BLOCKED: ${err.message}`;
-                    fb.style.color = "#ff4444";
-                }
-
-            } else {
-                // JS FALLBACK (For older devices/browsers)
-                engineIndicator.innerText = "Engine: Web JavaScript Algorithm (Standard)";
-                engineIndicator.style.color = "#ffcc00";
-                fallbackReader.style.display = "block";
-
-                const html5QrCode = new Html5Qrcode("reader");
-                // FIX: Removed 'facingMode' here as well just in case
-                const config = { fps: 15, qrbox: { width: 250, height: 250 } };
-
-                try {
-                    await html5QrCode.start(
-                        { deviceId: { exact: undefined } }, // Requests default camera
-                        config,
-                        (decodedText) => handleScan(decodedText, user.uid)
-                    );
-                    fb.innerText = "READY FOR SCAN";
-                } catch (err) {
-                    fb.innerText = "CAMERA ACCESS DENIED";
-                    fb.style.color = "#ff4444";
-                }
-            }
+        // Initialize HTML5 Scanner
+        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
         });
+        
+        html5QrcodeScanner.render(onScanSuccess);
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            if (nativeStream) {
-                nativeStream.getTracks().forEach(track => track.stop());
-                cancelAnimationFrame(detectionLoop);
-            }
-            logoutUser();
-        });
+        document.getElementById('logout-btn').onclick = logoutUser;
     </script>
 </body>
 </html>
