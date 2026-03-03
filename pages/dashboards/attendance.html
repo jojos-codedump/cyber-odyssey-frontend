@@ -27,7 +27,7 @@
             margin-bottom: 15px;
         }
 
-        .terminal-header h2 { color: #fff; margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px;}
+        .terminal-header h2 { color: #fff; margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
         
         /* Live Sync Indicator */
         .live-status {
@@ -41,39 +41,115 @@
             padding: 5px 10px;
             border-radius: 4px;
             border: 1px solid rgba(0, 255, 204, 0.3);
+            transition: color 0.3s, border-color 0.3s, background 0.3s;
+        }
+
+        .live-status.degraded {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+            border-color: rgba(255, 68, 68, 0.3);
+        }
+
+        .live-status.retrying {
+            color: #ffcc00;
+            background: rgba(255, 204, 0, 0.1);
+            border-color: rgba(255, 204, 0, 0.3);
         }
 
         .pulse-dot {
             width: 8px;
             height: 8px;
+            flex-shrink: 0;
             background-color: #00ffcc;
             border-radius: 50%;
             animation: pulse 1.5s infinite;
+            transition: background-color 0.3s;
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 255, 204, 0); }
+            0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.7); }
+            70%  { transform: scale(1);    box-shadow: 0 0 0 6px rgba(0, 255, 204, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0); }
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-chip {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px 16px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .stat-chip span {
+            color: #00ffcc;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: block;
+            margin-top: 2px;
         }
 
         /* Log Table */
         .log-table-container { overflow-x: auto; }
         .log-table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.9rem; }
         .log-table th { text-align: left; padding: 12px 10px; background: #111; color: #888; border-bottom: 1px solid #333; text-transform: uppercase; }
-        .log-table td { padding: 12px 10px; border-bottom: 1px dashed #222; color: #ccc; }
+        .log-table td { padding: 12px 10px; border-bottom: 1px dashed #222; color: #ccc; vertical-align: middle; }
         .log-table tr:hover { background: rgba(0, 255, 204, 0.03); }
         
-        .log-time { color: #ffcc00; font-weight: bold; }
+        .log-time { color: #ffcc00; font-weight: bold; white-space: nowrap; }
         .log-event { color: #00ffcc; }
         .log-uid { color: #666; font-size: 0.8rem; }
+
+        /* State rows */
+        .state-row td {
+            text-align: center;
+            padding: 40px 20px;
+            font-family: monospace;
+        }
+
+        .state-row.loading td { color: #555; }
+        .state-row.empty   td { color: #555; }
+        .state-row.error   td { color: #ff4444; }
+
+        /* Inline retry button */
+        .btn-inline-retry {
+            margin-top: 10px;
+            padding: 6px 16px;
+            background: transparent;
+            border: 1px solid #ff4444;
+            color: #ff4444;
+            font-family: monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 4px;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+        .btn-inline-retry:hover { background: rgba(255, 68, 68, 0.15); }
+
+        /* New-row flash animation */
+        @keyframes row-flash {
+            0%   { background: rgba(0, 255, 204, 0.15); }
+            100% { background: transparent; }
+        }
+        .log-table tr.new-entry { animation: row-flash 1.5s ease-out forwards; }
 
         /* Media Queries for Mobile Readiness */
         @media (max-width: 768px) {
             .terminal-header { flex-direction: column; align-items: flex-start; gap: 10px; }
             .log-table { font-size: 0.8rem; }
             .log-table th, .log-table td { padding: 8px 5px; }
-            .hide-on-mobile { display: none; } /* Use to hide less critical columns on small screens */
+            .hide-on-mobile { display: none; }
+            .stats-bar { gap: 10px; }
         }
     </style>
 </head>
@@ -99,12 +175,19 @@
                 </div>
             </header>
 
+            <!-- Stats Bar -->
+            <div class="stats-bar">
+                <div class="stat-chip">Total Check-ins <span id="stat-total">—</span></div>
+                <div class="stat-chip">Last Scan <span id="stat-last">—</span></div>
+                <div class="stat-chip">Consecutive Errors <span id="stat-errors">0</span></div>
+            </div>
+
             <section class="terminal-section">
                 <div class="terminal-header">
                     <h2>Latest Network Ingresses</h2>
-                    <div class="live-status">
-                        <div class="pulse-dot"></div>
-                        <span id="sync-status-text">LIVE SYNC ACTIVE</span>
+                    <div class="live-status" id="live-status-badge">
+                        <div class="pulse-dot" id="pulse-dot"></div>
+                        <span id="sync-status-text">ESTABLISHING UPLINK...</span>
                     </div>
                 </div>
 
@@ -119,10 +202,11 @@
                             </tr>
                         </thead>
                         <tbody id="log-table-body">
-                            <tr>
-                                <td colspan="4" style="text-align: center; color: #666; padding: 30px;">
-                                    Establishing secure uplink to log servers...
-                                </td>
+                            <!-- BUG 3 FIX: Initial loading state is set here in HTML.
+                                 JavaScript always overwrites this — on success, on empty,
+                                 and on error — so it never stays stuck on this message. -->
+                            <tr class="state-row loading">
+                                <td colspan="4">Establishing secure uplink to log servers...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -138,89 +222,242 @@
         // Secure this page for both Admins and Volunteers
         monitorAuthState(true, ['Admin', 'Volunteer']);
 
-        // Format Event Names
-        const eventFormatMap = {
-            'event_codeshield': 'CodeShield',
-            'event_digital_dilemma': 'Digital Dilemma',
-            'event_cyber_visionary': 'Cyber Visionary',
-            'event_cyber_canvas': 'Cyber Canvas',
+        // ─────────────────────────────────────────────────────────────────────────
+        // Constants
+        // ─────────────────────────────────────────────────────────────────────────
+        const POLL_INTERVAL_MS   = 5000;
+        const MAX_ERROR_BACKOFF  = 30000; // cap backoff at 30s
+        const EVENT_FORMAT_MAP = {
+            'event_codeshield':       'CodeShield',
+            'event_digital_dilemma':  'Digital Dilemma',
+            'event_cyber_visionary':  'Cyber Visionary',
+            'event_cyber_canvas':     'Cyber Canvas',
             'event_packet_hijackers': 'Packet Hijackers'
         };
 
-        const tbody = document.getElementById('log-table-body');
-        const syncText = document.getElementById('sync-status-text');
+        // ─────────────────────────────────────────────────────────────────────────
+        // DOM refs
+        // ─────────────────────────────────────────────────────────────────────────
+        const tbody          = document.getElementById('log-table-body');
+        const syncText       = document.getElementById('sync-status-text');
+        const pulseDot       = document.getElementById('pulse-dot');
+        const statusBadge    = document.getElementById('live-status-badge');
+        const statTotal      = document.getElementById('stat-total');
+        const statLast       = document.getElementById('stat-last');
+        const statErrors     = document.getElementById('stat-errors');
 
-        // Main Fetch and Render Logic
-        async function fetchAndRenderLogs() {
+        // ─────────────────────────────────────────────────────────────────────────
+        // State
+        // ─────────────────────────────────────────────────────────────────────────
+        let consecutiveErrors = 0;
+        let pollTimer         = null;
+        // Track the topmost log_id we've rendered so we can flash new rows
+        let latestRenderedId  = null;
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Helpers
+        // ─────────────────────────────────────────────────────────────────────────
+        function formatTimestamp(raw) {
+            // raw can be an ISO string, a Firestore-serialised object, or a number
+            if (!raw) return '—';
             try {
-                const logs = await apiClient.fetchAttendanceLogs();
-                
-                if (logs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #666; padding: 20px;">No network ingresses detected yet.</td></tr>';
-                    return;
-                }
+                // Firestore timestamps serialise as { _seconds, _nanoseconds }
+                const ms = (raw._seconds !== undefined)
+                    ? raw._seconds * 1000
+                    : new Date(raw).getTime();
 
-                // Clear current table
-                tbody.innerHTML = '';
-
-                logs.forEach(log => {
-                    const tr = document.createElement('tr');
-                    
-                    // Format Timestamp cleanly
-                    const dateObj = new Date(log.timestamp);
-                    const timeString = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-                    
-                    const eventName = eventFormatMap[log.event_id] || log.event_id.replace('event_', '').toUpperCase();
-
-                    tr.innerHTML = `
-                        <td class="log-time">${timeString}</td>
-                        <td style="color: #fff; font-weight: bold;">${log.participant_name}</td>
-                        <td class="log-event">${eventName}</td>
-                        <td class="hide-on-mobile log-uid">${log.scanned_by_uid}</td>
-                    `;
-                    tbody.appendChild(tr);
+                if (isNaN(ms)) return '—';
+                return new Date(ms).toLocaleTimeString('en-IN', {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
                 });
-
-                // Update Sync Status
-                const now = new Date();
-                syncText.innerText = `SYNCED @ ${now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
-                
-            } catch (error) {
-                console.error("Log Fetch Error:", error);
-                syncText.innerText = "UPLINK DEGRADED";
-                syncText.style.color = "#ff4444";
-                document.querySelector('.pulse-dot').style.backgroundColor = "#ff4444";
+            } catch {
+                return '—';
             }
         }
 
-        // ---------------------------------------------------------
-        // DYNAMIC NAVIGATION LOGIC
-        // ---------------------------------------------------------
-        // Adjust the sidebar "Back" button depending on their role
-        const role = sessionStorage.getItem('userRole');
-        const navUl = document.getElementById('dynamic-nav');
-        
-        if (role === 'Admin') {
-            const backLink = document.createElement('li');
-            backLink.innerHTML = `<a href="admin.html">« Command Center</a>`;
-            navUl.insertBefore(backLink, navUl.firstChild);
-        } else if (role === 'Volunteer') {
-            const backLink = document.createElement('li');
-            backLink.innerHTML = `<a href="volunteer.html">« Volunteer Portal</a>`;
-            navUl.insertBefore(backLink, navUl.firstChild);
+        function formatEventName(eventId) {
+            if (!eventId) return '—';
+            return EVENT_FORMAT_MAP[eventId] || eventId.replace('event_', '').toUpperCase();
         }
 
-        // ---------------------------------------------------------
-        // INITIALIZATION & SHORT-POLLING
-        // ---------------------------------------------------------
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchAndRenderLogs(); // Initial fetch
-            
-            // Short Polling: Fetch new logs every 5 seconds
-            setInterval(fetchAndRenderLogs, 5000); 
+        function sanitise(str) {
+            // Prevent XSS in log data rendered via innerHTML
+            return String(str ?? '—')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Status badge helpers — centralised so every state change goes here
+        // ─────────────────────────────────────────────────────────────────────────
+        function setStatusOk(label) {
+            statusBadge.className = 'live-status';
+            pulseDot.style.backgroundColor = '#00ffcc';
+            syncText.innerText = label;
+            syncText.style.color = '';
+        }
+
+        function setStatusRetrying() {
+            statusBadge.className = 'live-status retrying';
+            pulseDot.style.backgroundColor = '#ffcc00';
+            syncText.innerText = `RETRYING... (${consecutiveErrors} error${consecutiveErrors > 1 ? 's' : ''})`;
+            syncText.style.color = '';
+        }
+
+        function setStatusDegraded(detail) {
+            statusBadge.className = 'live-status degraded';
+            pulseDot.style.backgroundColor = '#ff4444';
+            syncText.innerText = `UPLINK DEGRADED${detail ? ': ' + detail : ''}`;
+            syncText.style.color = '';
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // BUG 3 FIX: Render helpers that always write to tbody.
+        // The original catch block only updated the badge — leaving the tbody stuck
+        // on "Establishing secure uplink..." forever if the first fetch failed.
+        // Now every outcome (success / empty / error) unconditionally writes a row.
+        // ─────────────────────────────────────────────────────────────────────────
+        function renderError(message) {
+            tbody.innerHTML = `
+                <tr class="state-row error">
+                    <td colspan="4">
+                        UPLINK ERROR — ${sanitise(message)}
+                        <br>
+                        <button class="btn-inline-retry" id="manual-retry-btn">↺ RETRY NOW</button>
+                    </td>
+                </tr>`;
+            document.getElementById('manual-retry-btn')
+                .addEventListener('click', () => { clearTimeout(pollTimer); fetchAndRenderLogs(); });
+        }
+
+        function renderEmpty() {
+            tbody.innerHTML = `
+                <tr class="state-row empty">
+                    <td colspan="4">No network ingresses detected yet.</td>
+                </tr>`;
+        }
+
+        function renderLogs(logs) {
+            // Detect whether the top-of-list entry is new since last render
+            const incomingTopId = logs[0]?.log_id ?? null;
+            const hasNewEntries = incomingTopId && incomingTopId !== latestRenderedId;
+
+            tbody.innerHTML = '';
+
+            logs.forEach((log, idx) => {
+                const tr = document.createElement('tr');
+                // Flash newly arrived rows (anything above the previous top)
+                if (hasNewEntries && idx === 0) tr.classList.add('new-entry');
+
+                tr.innerHTML = `
+                    <td class="log-time">${formatTimestamp(log.timestamp)}</td>
+                    <td style="color:#fff; font-weight:bold;">${sanitise(log.participant_name)}</td>
+                    <td class="log-event">${sanitise(formatEventName(log.event_id))}</td>
+                    <td class="hide-on-mobile log-uid">${sanitise(log.scanned_by_uid)}</td>`;
+                tbody.appendChild(tr);
+            });
+
+            latestRenderedId = incomingTopId;
+
+            // Update stats bar
+            statTotal.innerText = logs.length;
+            statLast.innerText  = formatTimestamp(logs[0]?.timestamp);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Core fetch — called on init and by the polling loop
+        // ─────────────────────────────────────────────────────────────────────────
+        async function fetchAndRenderLogs() {
+            try {
+                const logs = await apiClient.fetchAttendanceLogs();
+
+                // Reset error counter on success
+                consecutiveErrors = 0;
+                statErrors.innerText = '0';
+                statErrors.style.color = '#00ffcc';
+
+                if (logs.length === 0) {
+                    renderEmpty();
+                } else {
+                    renderLogs(logs);
+                }
+
+                const now = new Date().toLocaleTimeString('en-IN', {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+                setStatusOk(`SYNCED @ ${now}`);
+
+            } catch (error) {
+                consecutiveErrors++;
+                statErrors.innerText = consecutiveErrors;
+                statErrors.style.color = '#ff4444';
+
+                console.error(`Log Fetch Error (attempt ${consecutiveErrors}):`, error);
+
+                // BUG 3 FIX: always update tbody on error so the loading state clears
+                renderError(error.message);
+
+                // Progressive badge states: first error = retrying, persistent = degraded
+                if (consecutiveErrors < 3) {
+                    setStatusRetrying();
+                } else {
+                    setStatusDegraded();
+                }
+            } finally {
+                // Always schedule the next poll, regardless of success or failure.
+                // On error we back off gradually (up to MAX_ERROR_BACKOFF) so we
+                // don't hammer a cold-starting Render instance.
+                const delay = consecutiveErrors === 0
+                    ? POLL_INTERVAL_MS
+                    : Math.min(POLL_INTERVAL_MS * consecutiveErrors, MAX_ERROR_BACKOFF);
+
+                pollTimer = setTimeout(fetchAndRenderLogs, delay);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Pause polling when the tab is hidden, resume when visible.
+        // Prevents a pile-up of queued fetches while the user is on another tab.
+        // ─────────────────────────────────────────────────────────────────────────
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearTimeout(pollTimer);
+            } else {
+                // Fetch immediately on tab focus so data is never stale
+                clearTimeout(pollTimer);
+                fetchAndRenderLogs();
+            }
         });
 
+        // ─────────────────────────────────────────────────────────────────────────
+        // Dynamic Navigation — inject "Back" link based on role
+        // ─────────────────────────────────────────────────────────────────────────
+        const role  = sessionStorage.getItem('userRole');
+        const navUl = document.getElementById('dynamic-nav');
+
+        if (role === 'Admin') {
+            const li = document.createElement('li');
+            li.innerHTML = `<a href="admin.html">« Command Center</a>`;
+            navUl.insertBefore(li, navUl.firstChild);
+        } else if (role === 'Volunteer') {
+            const li = document.createElement('li');
+            li.innerHTML = `<a href="volunteer.html">« Volunteer Portal</a>`;
+            navUl.insertBefore(li, navUl.firstChild);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Init
+        // BUG 3 FIX: The original code wrapped the initial call inside a
+        // DOMContentLoaded listener. ES module scripts are deferred by the browser
+        // and always run after the DOM is parsed, so DOMContentLoaded has usually
+        // already fired by the time the module executes — making the listener a
+        // no-op and the initial fetch never running. Call directly instead.
+        // ─────────────────────────────────────────────────────────────────────────
         document.getElementById('logout-btn').onclick = logoutUser;
+        fetchAndRenderLogs(); // kick off immediately
+
     </script>
 </body>
 </html>

@@ -30,6 +30,7 @@
         .status-processing { color: var(--neon-cyan); animation: blink 1s infinite; }
         .status-success { color: #00ffcc; border: 1px solid #00ffcc; background: rgba(0, 255, 204, 0.1); padding: 10px; border-radius: 4px; }
         .status-error { color: #ff4444; border: 1px solid #ff4444; background: rgba(255, 68, 68, 0.1); padding: 10px; border-radius: 4px; }
+        .status-warning { color: #ffcc00; border: 1px solid #ffcc00; background: rgba(255, 204, 0, 0.1); padding: 10px; border-radius: 4px; }
 
         @keyframes blink { 50% { opacity: 0.5; } }
 
@@ -78,71 +79,133 @@
 
     <script type="module">
         import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
+        import { auth } from '../../scripts/auth/firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { apiClient } from '../../scripts/api/api-client.js';
 
-        // 1. Security Access Logic
-        const user = await monitorAuthState(true, ['Admin', 'Volunteer']);
+        // ─────────────────────────────────────────────────────────────────────────
+        // BUG 2 FIX: monitorAuthState() returns void, so awaiting it gives
+        // undefined. Instead, we run the access-guard as normal and separately
+        // resolve the live Firebase Auth user object via a one-shot promise.
+        // ─────────────────────────────────────────────────────────────────────────
+        monitorAuthState(true, ['Admin', 'Volunteer']);
+
+        const user = await new Promise((resolve, reject) => {
+            const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+                unsubscribe(); // detach immediately after first emission
+                if (firebaseUser) {
+                    resolve(firebaseUser);
+                } else {
+                    // monitorAuthState will have already redirected, but guard here too
+                    reject(new Error("No authenticated user found."));
+                }
+            });
+        });
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // 1. UI Initialisation
+        // ─────────────────────────────────────────────────────────────────────────
         const role = sessionStorage.getItem('userRole');
         const assignedEvent = sessionStorage.getItem('assignedEvent') || 'event_codeshield';
-        
-        // Update UI based on role
-        document.getElementById('assigned-module-display').innerText = `ACTIVE MODULE: ${assignedEvent.replace('event_', '').toUpperCase()}`;
-        document.getElementById('back-link').href = role === 'Admin' ? '../dashboards/admin.html' : '../dashboards/volunteer.html';
 
+        document.getElementById('assigned-module-display').innerText =
+            `ACTIVE MODULE: ${assignedEvent.replace('event_', '').toUpperCase()}`;
+        document.getElementById('back-link').href =
+            role === 'Admin' ? '../dashboards/admin.html' : '../dashboards/volunteer.html';
+        document.getElementById('logout-btn').onclick = logoutUser;
+
+        // ─────────────────────────────────────────────────────────────────────────
         // 2. Scanner Logic
+        // ─────────────────────────────────────────────────────────────────────────
         const feedback = document.getElementById('scan-feedback');
         let isProcessing = false;
 
         async function onScanSuccess(decodedText) {
             if (isProcessing) return;
-            
+
             try {
                 isProcessing = true;
                 feedback.innerHTML = `<span class="status-processing">SYNCHRONIZING WITH GRID...</span>`;
 
-                // The QR payload is the participant_id
+                // ─────────────────────────────────────────────────────────────────
+                // BUG 1 FIX: qr-generator.js encodes a JSON object as the QR
+                // payload ({ p_id, e_id, name, t_id }), NOT a bare participant_id
+                // string. The old code passed the raw JSON string as participant_id,
+                // causing every backend lookup to 404 and silently skip the write.
+                // We parse it here and extract the correct fields.
+                // ─────────────────────────────────────────────────────────────────
+                let participantId;
+                let eventId = assignedEvent; // default to volunteer's assigned event
+
+                try {
+                    const qrPayload = JSON.parse(decodedText.trim());
+
+                    // Validate that this looks like a Cyber Odyssey QR payload
+                    if (!qrPayload.p_id) {
+                        throw new Error("Malformed QR: missing participant ID field.");
+                    }
+
+                    participantId = qrPayload.p_id;
+
+                    // Prefer the event embedded in the QR code so cross-event
+                    // scans surface a clear mismatch error from the backend,
+                    // rather than silently failing with a wrong event_id.
+                    if (qrPayload.e_id && qrPayload.e_id !== "undefined") {
+                        eventId = qrPayload.e_id;
+                    }
+
+                } catch (parseError) {
+                    // QR code is not valid JSON — could be a foreign/invalid code
+                    feedback.innerHTML = `<div class="status-error">INVALID QR: Not a recognised Cyber Odyssey credential.</div>`;
+                    console.error("QR parse error:", parseError.message);
+                    return; // exit; finally block will reset isProcessing
+                }
+
                 const scanData = {
-                    participant_id: decodedText.trim(),
-                    event_id: assignedEvent,
+                    participant_id: participantId,
+                    event_id: eventId,
                     scanned_by_uid: user.uid
                 };
 
                 const result = await apiClient.logAttendanceScan(scanData);
 
-                // HANDLE SPECIFIC BACKEND STATUS CODES
                 if (result.status === 'duplicate') {
-                    feedback.innerHTML = `<div class="status-error">ACCESS DENIED: NODE ALREADY LOGGED</div>`;
+                    feedback.innerHTML = `<div class="status-warning">ACCESS DENIED: NODE ALREADY LOGGED</div>`;
                     alert("DUPLICATE ENTRY: This participant has already checked in.");
                 } else if (result.status === 'success') {
-                    feedback.innerHTML = `<div class="status-success">ACCESS GRANTED: IDENTITY VERIFIED</div>`;
-                    // Brief pause to show success before resetting
+                    feedback.innerHTML = `<div class="status-success">✓ ACCESS GRANTED: IDENTITY VERIFIED</div>`;
                     setTimeout(() => {
                         feedback.innerHTML = `<span class="status-idle">AWAITING NEXT INPUT...</span>`;
                         isProcessing = false;
                     }, 3000);
-                    return; // Exit to prevent immediate re-processing
+                    return; // skip the finally reset; timeout above handles it
+                } else {
+                    // Unexpected status from backend — surface it
+                    feedback.innerHTML = `<div class="status-error">UNEXPECTED RESPONSE: ${JSON.stringify(result)}</div>`;
                 }
 
             } catch (error) {
                 console.error("Scan Error:", error);
-                feedback.innerHTML = `<div class="status-error">ENCRYPTION ERROR: ${error.message}</div>`;
+                feedback.innerHTML = `<div class="status-error">UPLINK ERROR: ${error.message}</div>`;
                 alert(`SCAN FAILED: ${error.message}`);
             } finally {
-                // Ensure we can scan again after errors
+                // Reset processing lock after errors or duplicate results.
+                // The success path returns early and resets via setTimeout instead.
                 setTimeout(() => { isProcessing = false; }, 2000);
             }
         }
 
-        // Initialize HTML5 Scanner
-        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-            fps: 10, 
+        // ─────────────────────────────────────────────────────────────────────────
+        // 3. Mount the HTML5 QR scanner
+        // ─────────────────────────────────────────────────────────────────────────
+        const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+            fps: 10,
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0
         });
-        
+
         html5QrcodeScanner.render(onScanSuccess);
 
-        document.getElementById('logout-btn').onclick = logoutUser;
     </script>
 </body>
 </html>
