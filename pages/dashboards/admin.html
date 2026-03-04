@@ -309,8 +309,12 @@
             }
         }
 
-        // Initialize directory on load
-        document.addEventListener('DOMContentLoaded', loadStaffData);
+        // Initialize directory on load — wait for Firebase Auth to rehydrate
+        // its persisted session before calling loadStaffData. DOMContentLoaded
+        // fires too early; auth.currentUser is still null at that point.
+        auth.onAuthStateChanged((user) => {
+            if (user) loadStaffData();
+        });
 
         // 3. CRM Roster Logic
         let currentActiveEventId = null;
