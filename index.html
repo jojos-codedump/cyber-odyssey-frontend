@@ -571,6 +571,8 @@
         .event-card:nth-child(3) { grid-column: span 4; }
         .event-card:nth-child(4) { grid-column: span 4; }
         .event-card:nth-child(5) { grid-column: span 4; }
+        /* Guest Lecture — full-width banner row */
+        .event-card:nth-child(6) { grid-column: span 12; flex-direction: row; align-items: center; gap: 40px; padding: 32px 40px; }
 
         .card-meta {
             display: flex;
@@ -649,12 +651,101 @@
         .event-card:nth-child(3) { --card-color: #a259ff; }
         .event-card:nth-child(4) { --card-color: #f0e040; }
         .event-card:nth-child(5) { --card-color: #00b4ff; }
+        .event-card:nth-child(6) { --card-color: #ff9f00; }
 
         .event-card:nth-child(1) .card-tag { color: #00ffcc; }
         .event-card:nth-child(2) .card-tag { color: #ff2b4e; }
         .event-card:nth-child(3) .card-tag { color: #a259ff; }
         .event-card:nth-child(4) .card-tag { color: #f0e040; }
         .event-card:nth-child(5) .card-tag { color: #00b4ff; }
+        .event-card:nth-child(6) .card-tag { color: #ff9f00; }
+
+        /* ── Guest Lecture card — horizontal layout internals ── */
+        .event-card:nth-child(6) .card-body {
+            flex: 1;
+        }
+        .event-card:nth-child(6) .card-meta {
+            margin-bottom: 14px;
+        }
+        .event-card:nth-child(6) p {
+            margin-bottom: 0;
+        }
+        .event-card:nth-child(6) .card-footer {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 0;
+            border-top: none;
+            border-left: 1px solid rgba(255,255,255,0.06);
+            padding-left: 40px;
+            gap: 16px;
+            min-width: 160px;
+        }
+        .event-card:nth-child(6) .card-arrow {
+            width: 44px; height: 44px;
+            font-size: 1.2rem;
+        }
+
+        /* ── "NEW" badge ── */
+        .card-new-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .6rem;
+            letter-spacing: 3px;
+            color: #ff9f00;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border: 1px solid rgba(255,159,0,0.35);
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        /* sweeping shimmer on the badge */
+        .card-new-badge::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,159,0,0.2), transparent);
+            animation: badge-sweep 2.4s ease infinite;
+        }
+        @keyframes badge-sweep {
+            0%   { left: -100%; }
+            50%  { left: 160%; }
+            100% { left: 160%; }
+        }
+        .badge-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: #ff9f00;
+            box-shadow: 0 0 5px #ff9f00;
+            animation: badge-dot-pulse 1.4s ease-in-out infinite;
+        }
+        @keyframes badge-dot-pulse {
+            0%,100% { transform: scale(1); opacity: 1; }
+            50%      { transform: scale(1.7); opacity: .5; }
+        }
+
+        /* ── Scan-sweep animation on Guest Lecture card border ── */
+        .event-card:nth-child(6) {
+            background-image: linear-gradient(
+                135deg,
+                rgba(255,159,0,0.03) 0%,
+                transparent 60%
+            );
+        }
+        .event-card:nth-child(6).visible {
+            /* Chain the fade-in and the infinite border scan together */
+            animation: 
+                card-in .55s ease forwards, 
+                card-border-scan 6s linear infinite forwards;
+        }
+        
+        @keyframes card-border-scan {
+            0%,100% { box-shadow: 0 0 0 1px rgba(255,159,0,0.08); }
+            50%      { box-shadow: 0 0 18px rgba(255,159,0,0.12), 0 0 0 1px rgba(255,159,0,0.18); }
+        }
 
         /* ─── CTA Banner ────────────────────────────────────── */
         .cta-banner {
@@ -776,8 +867,28 @@
             .event-card:nth-child(2),
             .event-card:nth-child(3),
             .event-card:nth-child(4),
-            .event-card:nth-child(5) { grid-column: span 1; }
+            .event-card:nth-child(5),
+            .event-card:nth-child(6) { grid-column: span 1; }
             .event-card:nth-child(1) h3 { font-size: 1.3rem; }
+            /* Stack guest lecture vertically on mobile */
+            .event-card:nth-child(6) {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0;
+                padding: 28px 24px;
+            }
+            .event-card:nth-child(6) p { margin-bottom: 20px; }
+            .event-card:nth-child(6) .card-footer {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                border-left: none;
+                border-top: 1px solid rgba(255,255,255,0.06);
+                padding-left: 0;
+                padding-top: 18px;
+                min-width: unset;
+                width: 100%;
+            }
 
             .cta-banner { padding: 60px 24px; }
             footer { padding: 30px 24px; flex-direction: column; text-align: center; }
@@ -793,6 +904,14 @@
             .event-card:nth-child(3) { grid-column: span 3; }
             .event-card:nth-child(4) { grid-column: span 3; }
             .event-card:nth-child(5) { grid-column: span 3; }
+            .event-card:nth-child(6) { grid-column: span 6; flex-direction: column; align-items: flex-start; gap: 0; }
+            .event-card:nth-child(6) p { margin-bottom: 20px; }
+            .event-card:nth-child(6) .card-footer {
+                flex-direction: row; align-items: center;
+                justify-content: space-between; border-left: none;
+                border-top: 1px solid rgba(255,255,255,0.06);
+                padding-left: 0; padding-top: 18px; min-width: unset; width: 100%;
+            }
         }
     </style>
 </head>
@@ -845,7 +964,7 @@
     <!-- ── Stats Strip ───────────────────────── -->
     <div class="stats-strip">
         <div class="stat-item">
-            <span class="stat-num" data-target="5">0</span>
+            <span class="stat-num" data-target="6">0</span>
             <span class="stat-label">Active Events</span>
         </div>
         <div class="stat-item">
@@ -867,7 +986,7 @@
         <div class="section-header">
             <span class="section-eyebrow">// event_directory.list</span>
             <h2 class="section-title">Active <span>Directories</span></h2>
-            <div class="section-divider"><span>5 modules loaded</span></div>
+            <div class="section-divider"><span>6 modules loaded</span></div>
         </div>
 
         <div class="events-grid">
@@ -933,6 +1052,22 @@
                 <p>Digital poster gallery. Showcase complex technological concepts through compelling visual design and research.</p>
                 <div class="card-footer">
                     <span class="card-participants">Solo participants</span>
+                    <div class="card-arrow">↗</div>
+                </div>
+            </a>
+
+            <a href="pages/events/guest-lecture.html" class="event-card">
+                <div class="card-body">
+                    <div class="card-meta">
+                        <span class="card-index">06 —</span>
+                        <span class="card-tag">Keynote / Lecture</span>
+                    </div>
+                    <h3>Guest Lecture</h3>
+                    <p>An exclusive industry keynote from a leading expert in cybersecurity, AI, or systems architecture. Open to all registered participants — no team required. Secure your seat and get direct access to insights shaping the future of technology.</p>
+                </div>
+                <div class="card-footer">
+                    <span class="card-new-badge"><span class="badge-dot"></span>Now Open</span>
+                    <span class="card-participants">Solo · Open registration</span>
                     <div class="card-arrow">↗</div>
                 </div>
             </a>
