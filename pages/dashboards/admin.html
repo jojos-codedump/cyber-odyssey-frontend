@@ -83,6 +83,10 @@
         .card-hijackers { border-top: 3px solid #ff4500; }
         .card-hijackers:hover { box-shadow: 0 0 20px rgba(255, 69, 0, 0.3); transform: translateY(-5px); border-color: #ff4500; }
         .card-hijackers .roster-link { color: #ff4500; }
+
+        .card-guest { border-top: 3px solid #ffcc00; }
+        .card-guest:hover { box-shadow: 0 0 20px rgba(255, 204, 0, 0.3); transform: translateY(-5px); border-color: #ffcc00; }
+        .card-guest .roster-link { color: #ffcc00; }
         
         .roster-link { font-size: 0.85rem; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
     </style>
@@ -96,6 +100,7 @@
                 <ul>
                     <li><a href="#" class="active">Live Overview</a></li>
                     <li><a href="../participant/scanner.html">QR Scanner</a></li>
+                    <li><a href="../dashboards/attendance.html">Attendance Logs</a></li>
                     <li><a href="../events/codeshield.html">CodeShield Monitor</a></li>
                     <li><a href="../events/cyber-visionary.html">Visionary Tree</a></li>
                 </ul>
@@ -135,6 +140,10 @@
                     <h3 style="color: #ccc;">Packet Hijackers</h3>
                     <div class="roster-link">OPEN ROSTER</div>
                 </div>
+                <div class="stat-card card-guest" data-event="event_guest_lecture">
+                    <h3 style="color: #ccc;">Guest Lecture</h3>
+                    <div class="roster-link">OPEN ROSTER</div>
+                </div>
             </section>
 
             <section class="admin-section">
@@ -158,6 +167,7 @@
                                 <option value="event_cyber_visionary">Cyber Visionary</option>
                                 <option value="event_packet_hijackers">Packet Hijackers</option>
                                 <option value="event_cyber_canvas">Cyber Canvas</option>
+                                <option value="event_guest_lecture">Guest Lecture</option>
                             </select>
                         </div>
                         <div style="display: flex; align-items: flex-end;">

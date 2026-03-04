@@ -105,11 +105,23 @@
         // ─────────────────────────────────────────────────────────────────────────
         // 1. UI Initialisation
         // ─────────────────────────────────────────────────────────────────────────
-        const role = sessionStorage.getItem('userRole');
+        const role          = sessionStorage.getItem('userRole');
         const assignedEvent = sessionStorage.getItem('assignedEvent') || 'event_codeshield';
 
+        // Named display map — cleaner than .replace('event_','').toUpperCase()
+        const EVENT_DISPLAY_NAMES = {
+            event_codeshield:       'CODESHIELD',
+            event_digital_dilemma:  'DIGITAL DILEMMA',
+            event_cyber_visionary:  'CYBER VISIONARY',
+            event_packet_hijackers: 'PACKET HIJACKERS',
+            event_cyber_canvas:     'CYBER CANVAS',
+            event_guest_lecture:    'GUEST LECTURE',
+        };
+        const displayName = EVENT_DISPLAY_NAMES[assignedEvent]
+            || assignedEvent.replace('event_', '').replace(/_/g, ' ').toUpperCase();
+
         document.getElementById('assigned-module-display').innerText =
-            `ACTIVE MODULE: ${assignedEvent.replace('event_', '').toUpperCase()}`;
+            `ACTIVE MODULE: ${displayName}`;
         document.getElementById('back-link').href =
             role === 'Admin' ? '../dashboards/admin.html' : '../dashboards/volunteer.html';
         document.getElementById('logout-btn').onclick = logoutUser;
