@@ -6,449 +6,647 @@
     <title>CodeShield — Cyber Odyssey 2.0</title>
     <link rel="stylesheet" href="../../styles/global.css">
     <link rel="stylesheet" href="../../styles/dashboards.css">
-    <link rel="stylesheet" href="../../styles/codeshield.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
-        /* ═══════════════════════════════════════════════════════════
-           CORE VARIABLES
-        ═══════════════════════════════════════════════════════════ */
-        :root {
-            --c:      #00ffcc;
-            --cdim:   rgba(0,255,204,0.08);
-            --cglow:  rgba(0,255,204,0.4);
-            --cmid:   rgba(0,255,204,0.22);
-            --red:    #ff2b4e;
-            --yel:    #ffcc00;
-            --bg:     #020204;
-            --glass:  rgba(4,4,10,0.80);
-            --border: rgba(0,255,204,0.14);
-            --dim:    #353850;
-            --disp:   'Orbitron', monospace;
-            --mono:   'Share Tech Mono', monospace;
-            --total:  25200;
-        }
+    /* ═══════════════════════════════════════════════════════════════
+       ROOT TOKENS
+    ═══════════════════════════════════════════════════════════════ */
+    :root {
+        --c:        #00ffcc;
+        --cglow:    rgba(0,255,204,0.5);
+        --cbg:      rgba(0,255,204,0.06);
+        --red:      #ff2b4e;
+        --yel:      #ffaa00;
+        --bg:       #020206;
+        --glass:    rgba(3,3,10,0.84);
+        --border:   rgba(0,255,204,0.1);
+        --dim:      #38395a;
+        --disp:     'Orbitron', monospace;
+        --mono:     'Share Tech Mono', monospace;
+        --total:    25200;
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        /* Phase color — JS-driven for smooth transitions */
+        --pc:       #00ffcc;
+        --pc-glow:  rgba(0,255,204,0.5);
+        --pc-far:   rgba(0,255,204,0.12);
+        --pc-rgb:   0,255,204;
+    }
 
-        body {
-            background: var(--bg);
-            font-family: var(--mono);
-            color: var(--c);
-            height: 100vh;
-            overflow: hidden;
-        }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
 
-        /* ── Matrix canvas ── */
-        #matrix-canvas {
-            position: fixed; inset: 0;
-            z-index: 0; opacity: .2;
-        }
+    body {
+        background: var(--bg);
+        font-family: var(--mono);
+        color: var(--c);
+    }
 
-        /* ── Animated grid ── */
-        .bg-grid {
-            position: fixed; inset: 0; z-index: 1; pointer-events: none;
-            background-image:
-                linear-gradient(rgba(0,255,204,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,255,204,0.03) 1px, transparent 1px);
-            background-size: 42px 42px;
-            animation: g-drift 22s linear infinite;
-        }
-        @keyframes g-drift {
-            from { background-position: 0 0; }
-            to   { background-position: 42px 42px; }
-        }
+    /* ═══════════════════════════════════════════════════════════════
+       BACKGROUND STACK
+    ═══════════════════════════════════════════════════════════════ */
+    #matrix-canvas {
+        position: fixed; inset: 0; z-index: 0; opacity: .18;
+        pointer-events: none;
+    }
 
-        /* ── Vignette ── */
-        .bg-vignette {
-            position: fixed; inset: 0; z-index: 2; pointer-events: none;
-            background: radial-gradient(ellipse 80% 80% at 50% 50%,
-                transparent 18%, rgba(2,2,4,0.74) 100%);
-        }
+    .bg-grid {
+        position: fixed; inset: 0; z-index: 1; pointer-events: none;
+        background-image:
+            linear-gradient(rgba(0,255,204,.028) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,255,204,.028) 1px, transparent 1px);
+        background-size: 46px 46px;
+        animation: grid-drift 30s linear infinite;
+    }
+    @keyframes grid-drift {
+        from { background-position: 0 0; }
+        to   { background-position: 46px 46px; }
+    }
 
-        /* ── CRT scanlines ── */
-        .bg-scan {
-            position: fixed; inset: 0; z-index: 3; pointer-events: none;
-            background: repeating-linear-gradient(
-                to bottom, transparent 0, transparent 3px,
-                rgba(0,0,0,0.05) 3px, rgba(0,0,0,0.05) 4px
-            );
-        }
+    /* Radial vignette */
+    .bg-vignette {
+        position: fixed; inset: 0; z-index: 2; pointer-events: none;
+        background: radial-gradient(ellipse 65% 65% at 50% 50%,
+            transparent 18%, rgba(2,2,6,.9) 100%);
+    }
 
-        /* ── Corner brackets ── */
-        .corner {
-            position: fixed; z-index: 80;
-            width: 32px; height: 32px;
-            opacity: 0; animation: cfade 1.2s ease forwards .5s;
-        }
-        @keyframes cfade { to { opacity: .65; } }
-        .c-tl { top:14px; left:14px; border-top:1px solid var(--c); border-left:1px solid var(--c); }
-        .c-tr { top:14px; right:14px; border-top:1px solid var(--c); border-right:1px solid var(--c); }
-        .c-bl { bottom:14px; left:14px; border-bottom:1px solid var(--c); border-left:1px solid var(--c); }
-        .c-br { bottom:14px; right:14px; border-bottom:1px solid var(--c); border-right:1px solid var(--c); }
+    /* CRT scan lines */
+    .bg-scan {
+        position: fixed; inset: 0; z-index: 3; pointer-events: none;
+        background: repeating-linear-gradient(
+            to bottom,
+            transparent 0, transparent 3px,
+            rgba(0,0,0,.04) 3px, rgba(0,0,0,.04) 4px
+        );
+    }
 
-        /* ══════════════════════════════════════════════════
-           TOPBAR
-        ══════════════════════════════════════════════════ */
-        .topbar {
-            position: fixed; top:0; left:0; right:0; height:52px;
-            background: var(--glass);
-            border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            display: flex; align-items: center;
-            justify-content: space-between;
-            padding: 0 24px; z-index: 100;
-        }
-        .topbar-brand {
-            font-family: var(--disp);
-            font-size: .74rem; font-weight: 700;
-            letter-spacing: 4px; text-transform: uppercase;
-            color: var(--c); text-shadow: 0 0 12px var(--cglow);
-        }
-        .topbar-brand::after { content:'_'; animation: blink .9s step-end infinite; }
-        @keyframes blink { 50% { opacity:0; } }
+    /* Breathing ambient orb — reacts to phase color via JS */
+    #bg-orb {
+        position: fixed;
+        width: clamp(500px, 70vw, 900px);
+        height: clamp(500px, 70vw, 900px);
+        border-radius: 50%;
+        background: radial-gradient(circle,
+            rgba(var(--pc-rgb), .038) 0%, transparent 68%);
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2; pointer-events: none;
+        animation: orb-breathe 5s ease-in-out infinite;
+        transition: background 2s ease;
+    }
+    @keyframes orb-breathe {
+        0%,100% { transform: translate(-50%,-50%) scale(1);   opacity: .6; }
+        50%      { transform: translate(-50%,-50%) scale(1.1); opacity: 1;  }
+    }
 
-        .topbar-center {
-            position: absolute; left: 50%; transform: translateX(-50%);
-            font-size: .58rem; letter-spacing: 4px; color: var(--dim);
-            text-transform: uppercase; white-space: nowrap;
-        }
-        .topbar-right { display: flex; align-items: center; gap: 18px; }
+    /* ═══════════════════════════════════════════════════════════════
+       CORNER FRAME
+    ═══════════════════════════════════════════════════════════════ */
+    .corner {
+        position: fixed; z-index: 80;
+        width: 30px; height: 30px;
+        opacity: 0; animation: cfade 1s ease forwards .6s;
+    }
+    @keyframes cfade { to { opacity: .55; } }
+    .c-tl { top:14px; left:14px;   border-top:1px solid var(--c); border-left:1px solid var(--c); }
+    .c-tr { top:14px; right:14px;  border-top:1px solid var(--c); border-right:1px solid var(--c); }
+    .c-bl { bottom:14px; left:14px;  border-bottom:1px solid var(--c); border-left:1px solid var(--c); }
+    .c-br { bottom:14px; right:14px; border-bottom:1px solid var(--c); border-right:1px solid var(--c); }
 
-        .nav-back {
-            font-size: .66rem; letter-spacing: 2px;
-            color: var(--dim); text-decoration: none; text-transform: uppercase;
-            transition: color .2s;
-        }
-        .nav-back:hover { color: var(--c); }
+    /* ═══════════════════════════════════════════════════════════════
+       TOPBAR
+    ═══════════════════════════════════════════════════════════════ */
+    .topbar {
+        position: fixed; top:0; left:0; right:0; height: 50px;
+        background: var(--glass);
+        border-bottom: 1px solid var(--border);
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+        display: flex; align-items: center;
+        justify-content: space-between;
+        padding: 0 24px; z-index: 100;
+    }
+    .topbar-brand {
+        font-family: var(--disp);
+        font-size: .72rem; font-weight: 700;
+        letter-spacing: 4px; text-transform: uppercase;
+        color: var(--c);
+        text-shadow: 0 0 14px var(--cglow);
+    }
+    .topbar-brand::after { content:'_'; animation: cur .9s step-end infinite; }
+    @keyframes cur { 50% { opacity:0; } }
 
-        .btn-exit {
-            padding: 6px 15px;
-            background: transparent;
-            border: 1px solid rgba(255,43,78,.3);
-            color: var(--red);
-            font-family: var(--mono); font-size: .64rem;
-            letter-spacing: 2px; text-transform: uppercase;
-            cursor: pointer; border-radius: 3px;
-            transition: background .2s, border-color .2s;
-        }
-        .btn-exit:hover { background: rgba(255,43,78,.1); border-color: var(--red); }
+    .topbar-center {
+        position: absolute; left:50%; transform: translateX(-50%);
+        font-size: .56rem; letter-spacing: 4px;
+        color: var(--dim); text-transform: uppercase; white-space: nowrap;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 18px; }
 
-        /* ══════════════════════════════════════════════════
-           STAGE
-        ══════════════════════════════════════════════════ */
-        .stage {
-            position: fixed; inset: 52px 0 0 0;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            z-index: 10;
-            padding: 14px 20px 18px;
-            overflow: hidden;
-        }
+    .nav-back {
+        font-size: .64rem; letter-spacing: 2px; color: var(--dim);
+        text-decoration: none; text-transform: uppercase;
+        transition: color .2s;
+    }
+    .nav-back:hover { color: var(--c); }
 
-        /* staggered entry */
-        .e { opacity: 0; animation: eup .65s ease forwards; }
-        .e1 { animation-delay: .2s; }
-        .e2 { animation-delay: .5s; }
-        .e3 { animation-delay: .8s; }
-        .e4 { animation-delay: 1.1s; }
-        .e5 { animation-delay: 1.4s; }
-        @keyframes eup {
-            from { opacity: 0; transform: translateY(14px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
+    .btn-exit {
+        padding: 5px 14px; background: transparent;
+        border: 1px solid rgba(255,43,78,.28); color: var(--red);
+        font-family: var(--mono); font-size: .62rem;
+        letter-spacing: 2px; text-transform: uppercase;
+        cursor: pointer; border-radius: 3px; transition: background .2s;
+    }
+    .btn-exit:hover { background: rgba(255,43,78,.1); }
 
-        /* ── Eyebrow ── */
-        .eyebrow {
-            font-size: .6rem; letter-spacing: 6px;
-            color: var(--dim); text-transform: uppercase;
-            margin-bottom: 12px;
-        }
+    /* ═══════════════════════════════════════════════════════════════
+       STAGE (full-height centered)
+    ═══════════════════════════════════════════════════════════════ */
+    .stage {
+        position: fixed; inset: 50px 0 0 0;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        z-index: 10; padding: 20px 24px;
+        overflow: hidden;
+    }
 
-        /* ── Glitch headline ── */
-        .headline {
-            position: relative; display: inline-block;
-            font-family: var(--disp);
-            font-size: clamp(.85rem, 2.2vw, 1.35rem);
-            font-weight: 700; color: #fff;
-            letter-spacing: 8px; text-transform: uppercase;
-            margin-bottom: 24px;
-        }
-        .headline::before, .headline::after {
-            content: attr(data-text);
-            position: absolute; inset: 0; color: #fff;
-        }
-        .headline::before {
-            text-shadow: -2px 0 var(--red);
-            clip-path: inset(22% 0 52% 0);
-            animation: gl-t 7s infinite linear;
-        }
-        .headline::after {
-            text-shadow: 2px 0 #0ff;
-            clip-path: inset(63% 0 8% 0);
-            animation: gl-b 7s infinite linear;
-        }
-        @keyframes gl-t {
-            0%,76%,78%,100% { transform:none; clip-path:inset(22% 0 52% 0); }
-            77% { transform:translate(-3px,-2px); clip-path:inset(4% 0 80% 0); }
-        }
-        @keyframes gl-b {
-            0%,66%,68%,100% { transform:none; clip-path:inset(63% 0 8% 0); }
-            67% { transform:translate(3px,2px); clip-path:inset(84% 0 2% 0); }
-        }
+    /* Stagger-entry animation */
+    .e  { opacity:0; animation: eup .7s cubic-bezier(.22,1,.36,1) forwards; }
+    .e1 { animation-delay: .1s; }  .e2 { animation-delay: .25s; }
+    .e3 { animation-delay: .42s; } .e4 { animation-delay: .6s; }
+    .e5 { animation-delay: .78s; } .e6 { animation-delay: .96s; }
+    @keyframes eup {
+        from { opacity:0; transform: translateY(16px); }
+        to   { opacity:1; transform: translateY(0); }
+    }
 
-        /* ══════════════════════════════════════════════════
-           ARC RING
-        ══════════════════════════════════════════════════ */
-        .ring-wrap {
-            position: relative; margin-bottom: 14px;
-        }
+    /* ═══════════════════════════════════════════════════════════════
+       SHARED TEXT STYLES
+    ═══════════════════════════════════════════════════════════════ */
+    .eyebrow {
+        font-size: .56rem; letter-spacing: 7px; color: var(--dim);
+        text-transform: uppercase; margin-bottom: 10px; text-align: center;
+    }
 
-        .ring-svg { display: block; transform: rotate(-90deg); overflow: visible; }
+    /* Animated gradient headline */
+    .headline {
+        font-family: var(--disp);
+        font-size: clamp(.9rem, 2vw, 1.4rem);
+        font-weight: 700; letter-spacing: 8px;
+        text-transform: uppercase; text-align: center;
+        margin-bottom: 30px;
+        background: linear-gradient(100deg,
+            #00ffcc 0%, #00ccff 15%, #7b61ff 30%,
+            #ff2b4e 45%, #ffaa00 58%, #00ffcc 72%,
+            #00ccff 85%, #7b61ff 100%
+        );
+        background-size: 260% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: grad-sweep 6s linear infinite;
+        /* Glitch via drop-shadow filters */
+        filter: drop-shadow(0 0 8px rgba(0,255,204,.18));
+    }
+    @keyframes grad-sweep {
+        0%   { background-position: 0% center; }
+        100% { background-position: 260% center; }
+    }
 
-        .ring-inner {
-            position: absolute; inset: 0;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            pointer-events: none;
-        }
+    /* Periodic glitch on headline */
+    @keyframes headline-glitch {
+        0%,90%,100%  { filter: drop-shadow(0 0 8px rgba(0,255,204,.18)); transform: none; }
+        91%  { filter: drop-shadow(-3px 0 rgba(255,43,78,.7)) drop-shadow(3px 0 rgba(0,204,255,.7)); transform: skewX(.8deg); }
+        92%  { filter: drop-shadow(0 0 8px rgba(0,255,204,.18)); transform: none; }
+        94%  { filter: drop-shadow(-2px 0 rgba(255,43,78,.5)); transform: skewX(-.4deg); }
+        95%  { filter: drop-shadow(0 0 8px rgba(0,255,204,.18)); transform: none; }
+    }
+    .headline { animation: grad-sweep 6s linear infinite, headline-glitch 9s ease-in-out infinite; }
 
-        /* ── Countdown display ── */
-        #countdown-display {
-            font-family: var(--disp);
-            font-size: clamp(2.2rem, 8.5vw, 5.2rem);
-            font-weight: 900;
-            color: var(--c);
-            letter-spacing: 3px; line-height: 1;
-            font-variant-numeric: tabular-nums;
-            text-shadow: 0 0 16px var(--c), 0 0 42px rgba(0,255,204,.26);
-            transition: color .4s, text-shadow .4s;
-        }
-        #countdown-display.warn {
-            color: var(--yel);
-            text-shadow: 0 0 16px var(--yel), 0 0 42px rgba(255,204,0,.26);
-        }
-        #countdown-display.crit {
-            color: var(--red);
-            text-shadow: 0 0 18px var(--red), 0 0 48px rgba(255,43,78,.3);
-            animation: c-flicker 1.3s infinite;
-        }
-        @keyframes c-flicker {
-            0%,100%{opacity:1} 91%{opacity:1} 92%{opacity:.3} 93%{opacity:1} 95%{opacity:.65} 96%{opacity:1}
-        }
+    /* ═══════════════════════════════════════════════════════════════
+       ── PRE-START PANEL ──
+    ═══════════════════════════════════════════════════════════════ */
+    #panel-prestart {
+        display: flex; flex-direction: column; align-items: center;
+    }
 
-        .sep { display:inline-block; animation: sp .95s step-end infinite; }
-        @keyframes sp { 50%{opacity:.12} }
+    /* Four digit blocks: DAYS · HRS · MIN · SEC */
+    .prestart-grid {
+        display: flex; align-items: stretch;
+        gap: 0; margin-bottom: 28px;
+        border: 1px solid rgba(0,255,204,.07);
+        border-radius: 8px; overflow: hidden;
+        background: rgba(0,255,204,.018);
+    }
 
-        .disp-sub {
-            font-size: .56rem; letter-spacing: 4px;
-            color: var(--dim); text-transform: uppercase; margin-top: 8px;
-        }
+    .ps-cell {
+        display: flex; flex-direction: column; align-items: center;
+        padding: clamp(14px,2.2vw,28px) clamp(18px,3.2vw,50px) clamp(10px,1.5vw,20px);
+        position: relative;
+        border-right: 1px solid rgba(0,255,204,.07);
+    }
+    .ps-cell:last-child { border-right: none; }
 
-        /* ── Seg labels row ── */
-        .seg-row {
-            display: flex; font-size: .5rem; letter-spacing: 3px;
-            color: var(--dim); text-transform: uppercase; margin-bottom: 14px;
-        }
-        .seg-row span { display: inline-block; text-align: center; }
+    /* Top glow line per cell */
+    .ps-cell::before {
+        content:'';
+        position: absolute; top:0; left:0; right:0; height:1px;
+        background: linear-gradient(90deg, transparent, rgba(0,255,204,.18), transparent);
+    }
 
-        /* ══════════════════════════════════════════════════
-           CONTROLS
-        ══════════════════════════════════════════════════ */
-        .controls {
-            display: flex; gap: 10px; flex-wrap: wrap;
-            justify-content: center; margin-bottom: 20px;
-        }
+    /* Scan-line texture */
+    .ps-cell::after {
+        content:''; position: absolute; inset:0; pointer-events: none;
+        background: repeating-linear-gradient(
+            to bottom, transparent 0, transparent 3px,
+            rgba(0,0,0,.07) 3px, rgba(0,0,0,.07) 4px
+        );
+    }
 
-        .ctrl {
-            font-family: var(--disp); font-size: .64rem; font-weight: 700;
-            letter-spacing: 3px; text-transform: uppercase;
-            padding: 11px 24px; border-radius: 3px;
-            cursor: pointer; border: 1px solid;
-            position: relative; overflow: hidden;
-            transition: transform .2s, box-shadow .2s;
-        }
-        .ctrl::before {
-            content: '';
-            position: absolute; top:0; left:-100%;
-            width: 55%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
-            transition: left .45s;
-        }
-        .ctrl:hover::before { left: 160%; }
-        .ctrl:hover { transform: translateY(-2px); }
+    .ps-num {
+        font-family: var(--disp);
+        font-size: clamp(2.4rem, 6.5vw, 5rem);
+        font-weight: 900; line-height: 1;
+        color: rgba(0,255,204,.5);
+        text-shadow: 0 0 18px rgba(0,255,204,.18);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 2px;
+        transition: color .6s, text-shadow .6s;
+        white-space: nowrap;
+    }
 
-        #btn-start {
-            background: var(--c); color: #000; border-color: var(--c);
-            box-shadow: 0 0 16px rgba(0,255,204,.22);
-        }
-        #btn-start:hover { box-shadow: 0 0 32px rgba(0,255,204,.5); }
+    /* Tick animation when seconds change */
+    .ps-num.tick {
+        animation: num-tick .12s ease-out;
+    }
+    @keyframes num-tick {
+        0%  { opacity:.4; transform: translateY(-4px) scale(.96); }
+        100%{ opacity:1;  transform: translateY(0)    scale(1); }
+    }
 
-        #btn-pause {
-            display: none; background: transparent;
-            color: var(--yel); border-color: rgba(255,204,0,.35);
-        }
-        #btn-pause:hover { background: rgba(255,204,0,.1); border-color: var(--yel); }
+    .ps-lbl {
+        font-size: clamp(.38rem, .9vw, .52rem);
+        letter-spacing: 4px; text-transform: uppercase;
+        color: rgba(56,57,90,.9); margin-top: 8px;
+    }
 
-        #btn-reset {
-            display: none; background: transparent;
-            color: var(--red); border-color: rgba(255,43,78,.35);
-        }
-        #btn-reset:hover { background: rgba(255,43,78,.1); border-color: var(--red); }
+    /* Separator dots between cells */
+    .ps-sep-wrap {
+        display: flex; flex-direction: column; justify-content: center;
+        padding: 0 2px;
+        background: rgba(0,255,204,.018);
+    }
+    .ps-sep {
+        font-family: var(--disp);
+        font-size: clamp(1.2rem,3vw,2.2rem); font-weight: 900;
+        color: rgba(0,255,204,.12);
+        animation: sep-blink 1s step-end infinite;
+    }
+    @keyframes sep-blink { 50% { opacity:.06; } }
 
-        /* ══════════════════════════════════════════════════
-           STATUS STRIP
-        ══════════════════════════════════════════════════ */
-        .sstrip {
-            display: flex; align-items: center;
-            gap: 22px; flex-wrap: wrap; justify-content: center;
-        }
-        .sit {
-            display: flex; align-items: center; gap: 7px;
-            font-size: .62rem; letter-spacing: 2px;
-            color: var(--dim); text-transform: uppercase;
-        }
-        .sdot {
-            width: 6px; height: 6px;
-            border-radius: 50%; flex-shrink: 0;
-        }
-        .sdot.g { background:var(--c); box-shadow:0 0 6px var(--c); animation:dp 1.8s infinite; }
-        .sdot.y { background:var(--yel); box-shadow:0 0 6px var(--yel); animation:dp 1.8s infinite; }
-        .sdot.r { background:var(--red); box-shadow:0 0 6px var(--red); }
-        @keyframes dp { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.6);opacity:.45} }
-        .ssep { color: rgba(0,255,204,.1); }
+    /* Launch target badge */
+    .launch-badge {
+        display: inline-flex; align-items: center; gap: 12px;
+        padding: 8px 22px 8px 14px;
+        border: 1px solid rgba(0,255,204,.08);
+        border-radius: 40px;
+        background: rgba(0,255,204,.022);
+        margin-bottom: 0;
+    }
+    .launch-dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: rgba(0,255,204,.5);
+        animation: ldot 2.4s ease-in-out infinite;
+    }
+    @keyframes ldot {
+        0%,100% { box-shadow: 0 0 0 0 rgba(0,255,204,.4); }
+        50%      { box-shadow: 0 0 0 6px rgba(0,255,204,0); }
+    }
+    .launch-text {
+        font-size: .58rem; letter-spacing: 3px;
+        color: var(--dim); text-transform: uppercase;
+    }
+    .launch-date {
+        color: rgba(0,255,204,.45);
+    }
 
-        /* ══════════════════════════════════════════════════
-           LOG PANEL (bottom-right)
-        ══════════════════════════════════════════════════ */
-        .log-panel {
-            position: fixed; bottom:22px; right:22px;
-            width: min(290px, calc(100vw - 36px));
-            z-index: 50;
-            opacity: 0; animation: eup .6s ease forwards 2.2s;
-        }
-        .log-hdr {
-            font-size: .56rem; letter-spacing: 3px; color: var(--dim);
-            text-transform: uppercase; margin-bottom: 6px;
-            padding-bottom: 5px; border-bottom: 1px solid rgba(0,255,204,.06);
-        }
-        .log-entry {
-            display: flex; gap: 8px; align-items: flex-start;
-            padding: 6px 10px;
-            background: rgba(4,4,10,.86);
-            border: 1px solid rgba(0,255,204,.07);
-            border-left: 2px solid var(--c);
-            border-radius: 2px; margin-bottom: 5px;
-            font-size: .62rem; letter-spacing: .5px;
-            animation: ls .3s ease; backdrop-filter: blur(8px);
-        }
-        .log-entry.warn { border-left-color: var(--yel); }
-        .log-entry.crit { border-left-color: var(--red); }
-        @keyframes ls { from{opacity:0;transform:translateX(10px)} to{opacity:1;transform:none} }
-        .log-ts  { color: rgba(0,255,204,.4); white-space:nowrap; flex-shrink:0; }
-        .log-msg { color: #4e5270; }
+    /* ═══════════════════════════════════════════════════════════════
+       ── ACTIVE TIMER PANEL ──
+    ═══════════════════════════════════════════════════════════════ */
+    #panel-active {
+        display: none; flex-direction: column; align-items: center;
+    }
 
-        /* ══════════════════════════════════════════════════
-           PROGRESS BAR (foot)
-        ══════════════════════════════════════════════════ */
-        .prog-wrap {
-            position: fixed; bottom:0; left:0; right:0; height:2px; z-index:90;
-        }
-        #prog-fill {
-            height: 100%; width:100%;
-            background: var(--c); box-shadow: 0 0 8px var(--c);
-            transform-origin: left;
-            transition: transform 1s linear, background .4s, box-shadow .4s;
-        }
-        #prog-fill.warn { background:var(--yel); box-shadow:0 0 8px var(--yel); }
-        #prog-fill.crit { background:var(--red);  box-shadow:0 0 8px var(--red); }
+    /* Paused badge */
+    #paused-badge {
+        display: none;
+        font-size: .54rem; letter-spacing: 5px;
+        text-transform: uppercase;
+        color: var(--yel);
+        border: 1px solid rgba(255,170,0,.22);
+        padding: 3px 14px; border-radius: 3px;
+        margin-bottom: 10px;
+        background: rgba(255,170,0,.04);
+        animation: pb 1.1s step-end infinite;
+    }
+    #paused-badge.show { display: inline-block; }
+    @keyframes pb { 50% { opacity: .35; } }
 
-        /* ══════════════════════════════════════════════════
-           SESSION-END OVERLAY
-        ══════════════════════════════════════════════════ */
-        #end-overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,.93);
-            z-index: 500;
-            display: none; flex-direction: column;
-            align-items: center; justify-content: center; gap: 20px;
-        }
-        #end-overlay.show { display: flex; }
-        .end-t {
-            font-family: var(--disp);
-            font-size: clamp(1.6rem,7.5vw,4.8rem);
-            font-weight: 900; color: var(--red);
-            letter-spacing: 8px; text-transform: uppercase;
-            text-shadow: 0 0 28px var(--red), 0 0 58px rgba(255,43,78,.4);
-            animation: ef 2.5s infinite;
-        }
-        @keyframes ef {
-            0%,100%{opacity:1} 10%{opacity:.75} 11%{opacity:1}
-            49%{opacity:1}     50%{opacity:.2}  51%{opacity:1}
-        }
-        .end-s {
-            font-size: .72rem; letter-spacing: 4px;
-            color: rgba(255,43,78,.5); text-transform: uppercase;
-        }
-        .end-btn {
-            margin-top: 8px; padding:10px 28px;
-            background: transparent;
-            border: 1px solid rgba(255,43,78,.35); color: var(--red);
-            font-family: var(--mono); font-size: .7rem;
-            letter-spacing: 3px; text-transform: uppercase;
-            cursor: pointer; border-radius: 3px;
-            transition: background .2s;
-        }
-        .end-btn:hover { background: rgba(255,43,78,.12); }
+    /* ── DIGIT DISPLAY (three independent cells) ── */
+    .timer-display {
+        display: flex; align-items: stretch;
+        margin-bottom: 14px;
+        border: 1px solid rgba(var(--pc-rgb), .08);
+        border-radius: 8px; overflow: hidden;
+        position: relative;
+        /* Border color reacts to phase */
+        transition: border-color 2s;
+    }
 
-        /* ── Particles ── */
-        .pt {
-            position: fixed; border-radius: 50%;
-            pointer-events: none; z-index: 400;
-        }
+    .digit-cell {
+        display: flex; flex-direction: column; align-items: center;
+        padding: clamp(16px,2.8vw,36px) clamp(20px,4vw,64px) clamp(12px,2vw,24px);
+        background: rgba(var(--pc-rgb), .018);
+        position: relative;
+        border-right: 1px solid rgba(var(--pc-rgb), .07);
+        transition: background 2s;
+    }
+    .digit-cell:last-child { border-right: none; }
 
-        /* ══════════════════════════════════════════════════
-           RESPONSIVE
-        ══════════════════════════════════════════════════ */
-        @media (max-width: 520px) {
-            .topbar { padding: 0 14px; }
-            .topbar-center { display: none; }
-            .corner { width: 20px; height: 20px; }
-            .stage  { padding: 10px 12px 14px; }
-            .headline { letter-spacing: 3px; }
-            .ctrl { padding: 10px 16px; font-size: .58rem; letter-spacing: 2px; }
-            .controls { gap: 8px; }
-            .log-panel { display: none; }
-            #countdown-display { letter-spacing: 2px; }
-            .sstrip { gap: 14px; }
-        }
-        @media (max-height: 600px) {
-            .eyebrow  { margin-bottom: 6px; }
-            .headline { margin-bottom: 10px; }
-            .ring-wrap { margin-bottom: 6px; }
-            .seg-row  { margin-bottom: 8px; }
-            .controls { margin-bottom: 12px; }
-        }
+    /* Top shimmer line */
+    .digit-cell::before {
+        content: '';
+        position: absolute; top:0; left:0; right:0; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(var(--pc-rgb),.25), transparent);
+        transition: background 2s;
+    }
+
+    /* Scan lines */
+    .digit-cell::after {
+        content: ''; position: absolute; inset: 0; pointer-events: none;
+        background: repeating-linear-gradient(
+            to bottom, transparent 0, transparent 3px,
+            rgba(0,0,0,.09) 3px, rgba(0,0,0,.09) 4px
+        );
+    }
+
+    /* The big number */
+    .digit-num {
+        font-family: var(--disp);
+        font-size: clamp(3.2rem, 9vw, 7rem);
+        font-weight: 900; line-height: 1;
+        color: var(--pc);
+        text-shadow:
+            0 0 24px var(--pc-glow),
+            0 0 60px var(--pc-far),
+            0 0 2px rgba(255,255,255,.12);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 2px; white-space: nowrap;
+        transition: color 1.5s ease, text-shadow 1.5s ease;
+    }
+
+    /* Digit flip on change */
+    .digit-num.flip {
+        animation: digit-flip .14s ease-out;
+    }
+    @keyframes digit-flip {
+        0%  { opacity:.3; transform: translateY(-6px) scaleY(.9); }
+        100%{ opacity:1;  transform: translateY(0)    scaleY(1); }
+    }
+
+    .digit-lbl {
+        font-size: clamp(.4rem, 1vw, .56rem);
+        letter-spacing: 5px; text-transform: uppercase;
+        color: var(--dim); margin-top: 10px;
+        transition: color 1.5s;
+    }
+
+    /* Colon separators */
+    .digit-sep-wrap {
+        display: flex; flex-direction: column; justify-content: center;
+        background: rgba(var(--pc-rgb), .018);
+        transition: background 2s;
+    }
+    .digit-sep {
+        font-family: var(--disp);
+        font-size: clamp(1.8rem, 5vw, 4.2rem);
+        font-weight: 900;
+        color: rgba(var(--pc-rgb), .18);
+        padding: 0 clamp(8px, 1.8vw, 22px);
+        line-height: 1;
+        animation: sep-blink 1s step-end infinite;
+        transition: color 1.5s;
+    }
+
+    /* ── DISPLAY SUB-LABEL ── */
+    .disp-sub {
+        font-size: .54rem; letter-spacing: 5px;
+        color: var(--dim); text-transform: uppercase;
+        margin-bottom: 18px; text-align: center;
+    }
+
+    /* ── ARC RING (decorative progress strip) ── */
+    .ring-wrap {
+        margin-bottom: 18px;
+        position: relative;
+    }
+    .ring-svg {
+        display: block;
+        transform: rotate(-90deg);
+        overflow: visible;
+        filter: drop-shadow(0 0 6px rgba(var(--pc-rgb),.14));
+        transition: filter 2s;
+    }
+
+    /* ── CONTROLS ── */
+    .controls {
+        display: flex; gap: 10px; flex-wrap: wrap;
+        justify-content: center; margin-bottom: 16px;
+    }
+
+    .ctrl {
+        font-family: var(--disp); font-size: .6rem; font-weight: 700;
+        letter-spacing: 3px; text-transform: uppercase;
+        padding: 10px 22px; border-radius: 3px;
+        cursor: pointer; border: 1px solid;
+        position: relative; overflow: hidden;
+        transition: transform .2s, box-shadow .2s;
+    }
+    .ctrl::before {
+        content:''; position: absolute; top:0; left:-100%;
+        width:60%; height:100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+        transition: left .4s;
+    }
+    .ctrl:hover::before { left:160%; }
+    .ctrl:hover { transform: translateY(-2px); }
+
+    #btn-start {
+        background: var(--pc); color: #000; border-color: var(--pc);
+        box-shadow: 0 0 18px rgba(var(--pc-rgb),.2);
+        transition: background .8s, border-color .8s, box-shadow .8s;
+    }
+    #btn-start:hover { box-shadow: 0 0 32px rgba(var(--pc-rgb),.45); }
+
+    #btn-pause {
+        display: none; background: transparent;
+        color: var(--yel); border-color: rgba(255,170,0,.32);
+    }
+    #btn-pause:hover { background: rgba(255,170,0,.08); border-color: var(--yel); }
+
+    #btn-reset {
+        display: none; background: transparent;
+        color: var(--red); border-color: rgba(255,43,78,.32);
+    }
+    #btn-reset:hover { background: rgba(255,43,78,.08); border-color: var(--red); }
+
+    /* ── STATUS STRIP ── */
+    .sstrip {
+        display: flex; align-items: center;
+        gap: 20px; flex-wrap: wrap; justify-content: center;
+    }
+    .sit {
+        display: flex; align-items: center; gap: 7px;
+        font-size: .6rem; letter-spacing: 2px;
+        color: var(--dim); text-transform: uppercase;
+    }
+    .sdot {
+        width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .sdot.g { background: var(--c); box-shadow: 0 0 6px var(--c); animation: dp 2s infinite; }
+    .sdot.y { background: var(--yel); box-shadow: 0 0 6px var(--yel); animation: dp 2s infinite; }
+    .sdot.r { background: var(--red); box-shadow: 0 0 6px var(--red); }
+    @keyframes dp { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.7);opacity:.4} }
+    .ssep { color: rgba(0,255,204,.08); }
+
+    /* ═══════════════════════════════════════════════════════════════
+       LOG PANEL
+    ═══════════════════════════════════════════════════════════════ */
+    .log-panel {
+        position: fixed; bottom:20px; right:20px;
+        width: min(285px, calc(100vw - 32px));
+        z-index: 50;
+        opacity:0; animation: eup .6s ease forwards 2.2s;
+    }
+    .log-hdr {
+        font-size: .52rem; letter-spacing: 3px; color: var(--dim);
+        text-transform: uppercase; margin-bottom: 5px;
+        padding-bottom: 4px; border-bottom: 1px solid rgba(0,255,204,.05);
+    }
+    .log-entry {
+        display: flex; gap: 8px;
+        padding: 5px 9px;
+        background: rgba(3,3,10,.9);
+        border: 1px solid rgba(0,255,204,.06);
+        border-left: 2px solid var(--c);
+        border-radius: 2px; margin-bottom: 4px;
+        font-size: .6rem;
+        animation: logslide .25s ease;
+        backdrop-filter: blur(8px);
+    }
+    .log-entry.warn { border-left-color: var(--yel); }
+    .log-entry.crit { border-left-color: var(--red); }
+    @keyframes logslide { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:none} }
+    .log-ts  { color: rgba(0,255,204,.3); white-space: nowrap; flex-shrink:0; }
+    .log-msg { color: #484b68; }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PROGRESS BAR (foot)
+    ═══════════════════════════════════════════════════════════════ */
+    .prog-wrap {
+        position: fixed; bottom:0; left:0; right:0; height:2px; z-index:90;
+    }
+    #prog-fill {
+        height: 100%; width:100%;
+        background: var(--pc); box-shadow: 0 0 8px var(--pc);
+        transform-origin: left;
+        transition: transform 1s linear, background 1.5s, box-shadow 1.5s;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       END OVERLAY
+    ═══════════════════════════════════════════════════════════════ */
+    #end-overlay {
+        position: fixed; inset:0;
+        background: rgba(0,0,0,.95);
+        z-index: 500;
+        display: none; flex-direction: column;
+        align-items: center; justify-content: center; gap: 22px;
+    }
+    #end-overlay.show { display: flex; }
+
+    .end-t {
+        font-family: var(--disp);
+        font-size: clamp(1.4rem, 6.5vw, 4.8rem);
+        font-weight: 900; color: var(--red);
+        letter-spacing: 8px; text-transform: uppercase;
+        text-shadow: 0 0 28px var(--red), 0 0 55px rgba(255,43,78,.4);
+        animation: end-flicker 2.5s infinite;
+    }
+    @keyframes end-flicker {
+        0%,100%{opacity:1} 9%{opacity:1} 10%{opacity:.2} 11%{opacity:1}
+        49%{opacity:1}     50%{opacity:.1} 51%{opacity:1}
+    }
+    .end-s {
+        font-size: .7rem; letter-spacing: 4px;
+        color: rgba(255,43,78,.4); text-transform: uppercase;
+    }
+    .end-btn {
+        padding: 10px 28px; background: transparent;
+        border: 1px solid rgba(255,43,78,.3); color: var(--red);
+        font-family: var(--mono); font-size: .68rem;
+        letter-spacing: 3px; cursor: pointer; border-radius: 3px;
+        transition: background .2s;
+    }
+    .end-btn:hover { background: rgba(255,43,78,.1); }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PARTICLES
+    ═══════════════════════════════════════════════════════════════ */
+    .pt {
+        position: fixed; border-radius: 50%;
+        pointer-events: none; z-index: 400;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════════════════════ */
+    @media (max-width: 540px) {
+        .topbar { padding: 0 12px; }
+        .topbar-center { display: none; }
+        .corner { width: 18px; height: 18px; }
+        .log-panel { display: none; }
+        .ps-cell { padding: 12px 14px 9px; }
+        .digit-cell { padding: 14px 14px 10px; }
+        .digit-sep { padding: 0 5px; }
+    }
+    @media (max-height: 640px) {
+        .eyebrow   { margin-bottom: 5px; }
+        .headline  { margin-bottom: 14px; font-size: .82rem; }
+        .disp-sub  { margin-bottom: 10px; }
+        .ring-wrap { margin-bottom: 10px; }
+        .controls  { margin-bottom: 10px; }
+    }
     </style>
 </head>
-<body class="codeshield-theme">
+<body>
 
-    <!-- ── BG layers ── -->
+    <!-- ── Background layers ── -->
     <canvas id="matrix-canvas"></canvas>
     <div class="bg-grid"></div>
     <div class="bg-vignette"></div>
     <div class="bg-scan"></div>
+    <div id="bg-orb"></div>
 
-    <!-- ── Corner brackets ── -->
+    <!-- ── Corner frame ── -->
     <div class="corner c-tl"></div>
     <div class="corner c-tr"></div>
     <div class="corner c-bl"></div>
     <div class="corner c-br"></div>
 
-    <!-- ── End overlay ── -->
+    <!-- ── Session-end overlay ── -->
     <div id="end-overlay">
         <div class="end-t">SYSTEM COMPROMISED</div>
         <div class="end-s">// 7-hour session terminated</div>
@@ -470,50 +668,116 @@
         <div class="log-hdr">// event_log</div>
     </div>
 
-    <!-- ── Stage ── -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         STAGE
+    ═══════════════════════════════════════════════════════════════ -->
     <main class="stage">
 
-        <p class="eyebrow e e1">// 7-Hour Hackathon — Live Control Console</p>
+        <!-- ─── PRE-START PANEL ─── -->
+        <div id="panel-prestart">
 
-        <h1 class="headline e e2" data-text="SYSTEM COMPROMISE IN:">
-            SYSTEM COMPROMISE IN:
-        </h1>
+            <p class="eyebrow e e1">// hackathon status: scheduled</p>
 
-        <!-- Ring -->
-        <div class="ring-wrap e e3" id="ring-wrap">
-            <svg class="ring-svg" id="ring-svg" xmlns="http://www.w3.org/2000/svg"></svg>
-            <div class="ring-inner">
-                <div id="countdown-display">07<span class="sep">:</span>00<span class="sep">:</span>00</div>
-                <div class="disp-sub" id="disp-sub">awaiting ignition</div>
+            <h1 class="headline e e2">SYSTEM ACTIVATION IN:</h1>
+
+            <!-- Countdown blocks: DAYS · HRS · MIN · SEC -->
+            <div class="prestart-grid e e3">
+                <div class="ps-cell">
+                    <span class="ps-num" id="ps-days">00</span>
+                    <span class="ps-lbl">Days</span>
+                </div>
+                <div class="ps-sep-wrap"><span class="ps-sep">:</span></div>
+                <div class="ps-cell">
+                    <span class="ps-num" id="ps-hrs">00</span>
+                    <span class="ps-lbl">Hours</span>
+                </div>
+                <div class="ps-sep-wrap"><span class="ps-sep">:</span></div>
+                <div class="ps-cell">
+                    <span class="ps-num" id="ps-min">00</span>
+                    <span class="ps-lbl">Minutes</span>
+                </div>
+                <div class="ps-sep-wrap"><span class="ps-sep">:</span></div>
+                <div class="ps-cell">
+                    <span class="ps-num" id="ps-sec">00</span>
+                    <span class="ps-lbl">Seconds</span>
+                </div>
             </div>
+
+            <!-- Launch target -->
+            <div class="launch-badge e e4">
+                <div class="launch-dot"></div>
+                <span class="launch-text">
+                    Auto-Launch &nbsp;
+                    <span class="launch-date">07 March 2026 · 10:00 AM IST</span>
+                </span>
+            </div>
+
         </div>
 
-        <!-- Seg labels -->
-        <div class="seg-row e e3" id="seg-row"></div>
+        <!-- ─── ACTIVE TIMER PANEL ─── -->
+        <div id="panel-active">
 
-        <!-- Controls -->
-        <div class="controls e e4">
-            <button id="btn-start" class="ctrl">⚡ Initiate Hackathon</button>
-            <button id="btn-pause" class="ctrl">⏸ Pause</button>
-            <button id="btn-reset" class="ctrl">↺ Override / Reset</button>
-        </div>
+            <p class="eyebrow e e1">// 7-Hour Hackathon — Live Control Console</p>
 
-        <!-- Status strip -->
-        <div class="sstrip e e5">
-            <div class="sit">
-                <div class="sdot g" id="net-dot"></div>
-                <span id="net-lbl">Network Secure</span>
+            <h1 class="headline e e2">SYSTEM COMPROMISE IN:</h1>
+
+            <!-- Paused indicator -->
+            <div id="paused-badge">⏸ &nbsp;TIMER PAUSED</div>
+
+            <!-- Three digit cells -->
+            <div class="timer-display e e3">
+                <div class="digit-cell">
+                    <span class="digit-num" id="d-hrs">07</span>
+                    <span class="digit-lbl">Hours</span>
+                </div>
+                <div class="digit-sep-wrap">
+                    <span class="digit-sep">:</span>
+                </div>
+                <div class="digit-cell">
+                    <span class="digit-num" id="d-min">00</span>
+                    <span class="digit-lbl">Minutes</span>
+                </div>
+                <div class="digit-sep-wrap">
+                    <span class="digit-sep">:</span>
+                </div>
+                <div class="digit-cell">
+                    <span class="digit-num" id="d-sec">00</span>
+                    <span class="digit-lbl">Seconds</span>
+                </div>
             </div>
-            <span class="ssep">|</span>
-            <div class="sit">
-                <div class="sdot y"></div>
-                <span>Monitoring 150 Nodes</span>
+
+            <div class="disp-sub e e3" id="disp-sub">session live</div>
+
+            <!-- Decorative arc progress ring -->
+            <div class="ring-wrap e e4" id="ring-wrap">
+                <svg class="ring-svg" id="ring-svg" xmlns="http://www.w3.org/2000/svg"></svg>
             </div>
-            <span class="ssep">|</span>
-            <div class="sit">
-                <div class="sdot g" id="tmr-dot"></div>
-                <span id="tmr-lbl">Timer: Standby</span>
+
+            <!-- Admin controls -->
+            <div class="controls e e5">
+                <button id="btn-start" class="ctrl">⚡ Force Initiate</button>
+                <button id="btn-pause" class="ctrl">⏸ Pause</button>
+                <button id="btn-reset" class="ctrl">↺ Override / Reset</button>
             </div>
+
+            <!-- Status strip -->
+            <div class="sstrip e e6">
+                <div class="sit">
+                    <div class="sdot g" id="net-dot"></div>
+                    <span id="net-lbl">Network Secure</span>
+                </div>
+                <span class="ssep">|</span>
+                <div class="sit">
+                    <div class="sdot y"></div>
+                    <span id="node-lbl">Monitoring 150 Nodes</span>
+                </div>
+                <span class="ssep">|</span>
+                <div class="sit">
+                    <div class="sdot g" id="tmr-dot"></div>
+                    <span id="tmr-lbl">Timer: Standby</span>
+                </div>
+            </div>
+
         </div>
 
     </main>
@@ -521,9 +785,10 @@
     <!-- ── Progress bar ── -->
     <div class="prog-wrap"><div id="prog-fill"></div></div>
 
-    <!-- ══════════════════════════════════════════════════════
+
+    <!-- ══════════════════════════════════════════════════════════════
          AUTH SCRIPT
-    ══════════════════════════════════════════════════════ -->
+    ══════════════════════════════════════════════════════════════ -->
     <script type="module">
         import { monitorAuthState, logoutUser } from '../../scripts/auth/auth-handler.js';
         monitorAuthState(true, ['Admin', 'Volunteer', 'Judge']);
@@ -542,129 +807,351 @@
         }
     </script>
 
-    <!-- ══════════════════════════════════════════════════════
-         VISUALS + BRIDGE (matrix, ring, logs, particles)
-    ══════════════════════════════════════════════════════ -->
+
+    <!-- ══════════════════════════════════════════════════════════════
+         VISUALS BRIDGE
+         Sets up all window._ functions called by codeshield-ui.js.
+         Plain script (not module) so globals are reachable.
+    ══════════════════════════════════════════════════════════════ -->
     <script>
     (() => {
-        const TOTAL = 25200;
+        'use strict';
 
-        /* ── Matrix rain ─────────────────────────── */
+        const TOTAL = 25200; // 7 hours in seconds
+        const WARN  = 4200;  // 1h10m — color transition begins
+        const CRIT  = 1800;  // 30min — red critical
+
+        // ── Sync initial phase before codeshield-ui.js loads ──────────
+        const HACKATHON_START_MS = new Date('2026-03-07T04:30:00.000Z').getTime();
+        const HACKATHON_END_MS   = HACKATHON_START_MS + TOTAL * 1000;
+
+        const _now = Date.now();
+        if (_now < HACKATHON_START_MS) {
+            document.getElementById('panel-prestart').style.display = 'flex';
+            document.getElementById('panel-active').style.display   = 'none';
+        } else {
+            document.getElementById('panel-prestart').style.display = 'none';
+            document.getElementById('panel-active').style.display   = 'flex';
+        }
+
+        // ── Matrix rain ────────────────────────────────────────────────
         const cv  = document.getElementById('matrix-canvas');
         const ctx = cv.getContext('2d');
-        const CHS = '01アイウエオカキクケコサシスセソタチツテトナニヌ<>/\\{}|#$%!?@&';
+        const CHS = '01アイウエオカキクケコサシスセソナニヌネノ<>/\\{}|#$%!?@&*×÷';
         const FS  = 13;
         let drops = [];
+        let matrixRgb = '0,255,204';
+
         function rz() {
-            cv.width = innerWidth; cv.height = innerHeight;
+            cv.width  = innerWidth;
+            cv.height = innerHeight;
             drops = Array.from(
-                { length: Math.ceil(cv.width / FS) },
+                { length: Math.ceil(cv.width / FS) + 1 },
                 () => Math.floor(Math.random() * -cv.height / FS)
             );
         }
-        rz(); addEventListener('resize', rz, { passive: true });
-        function drawMx() {
-            ctx.fillStyle = 'rgba(2,2,4,.054)';
+        rz();
+        addEventListener('resize', rz, { passive: true });
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(2,2,6,.055)';
             ctx.fillRect(0, 0, cv.width, cv.height);
             ctx.font = FS + "px 'Share Tech Mono',monospace";
             drops.forEach((y, i) => {
-                const c = CHS[Math.floor(Math.random() * CHS.length)];
-                ctx.fillStyle = y <= 1 ? '#fff'
-                    : `rgba(0,255,204,${.1 + Math.random() * .45})`;
-                ctx.fillText(c, i * FS, y * FS);
+                const ch = CHS[Math.floor(Math.random() * CHS.length)];
+                const a  = .07 + Math.random() * .38;
+                ctx.fillStyle = y <= 1 ? '#fff' : `rgba(${matrixRgb},${a})`;
+                ctx.fillText(ch, i * FS, y * FS);
                 if (y * FS > cv.height && Math.random() > .975) drops[i] = 0;
                 drops[i]++;
             });
         }
-        setInterval(drawMx, 48);
+        setInterval(drawMatrix, 52);
 
-        /* ── Ring builder ────────────────────────── */
-        const rw  = document.getElementById('ring-wrap');
-        const rs  = document.getElementById('ring-svg');
-        let R = 0, CIRC = 0, CX = 0, CY = 0;
+        // ── Ring builder ───────────────────────────────────────────────
+        const rs = document.getElementById('ring-svg');
+        let CIRC = 0, R_ring = 0, CX_ring = 0, CY_ring = 0;
 
         function buildRing() {
-            const vw = innerWidth, vh = innerHeight - 52;
-            const dim = Math.round(Math.min(vw * .7, vh * .52, 370));
-            R = dim * .435; CIRC = 2 * Math.PI * R;
-            CX = CY = dim / 2;
-            rs.setAttribute('width', dim); rs.setAttribute('height', dim);
+            const dim = Math.round(Math.min(innerWidth * .42, 300));
+            R_ring = dim * .43;
+            CIRC   = 2 * Math.PI * R_ring;
+            CX_ring = CY_ring = dim / 2;
+
+            rs.setAttribute('width',   dim);
+            rs.setAttribute('height',  dim);
             rs.setAttribute('viewBox', `0 0 ${dim} ${dim}`);
             rs.innerHTML = '';
 
-            // ticks
+            // Tick marks
             for (let i = 0; i < 60; i++) {
-                const a = i / 60 * 2 * Math.PI;
+                const a     = i / 60 * 2 * Math.PI;
                 const major = i % 5 === 0;
-                const ri = major ? R - 9 : R - 5, ro = R + 2;
-                const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                ln.setAttribute('x1', CX + ri * Math.cos(a));
-                ln.setAttribute('y1', CY + ri * Math.sin(a));
-                ln.setAttribute('x2', CX + ro * Math.cos(a));
-                ln.setAttribute('y2', CY + ro * Math.sin(a));
-                ln.setAttribute('stroke', major ? 'rgba(0,255,204,.28)' : 'rgba(0,255,204,.08)');
+                const ri    = R_ring + 3;
+                const ro    = R_ring + (major ? 11 : 6);
+                const ln    = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                // Ticks are on the outside of the ring (no -90deg offset needed; SVG is rotated via CSS)
+                ln.setAttribute('x1', CX_ring + ri * Math.cos(a));
+                ln.setAttribute('y1', CY_ring + ri * Math.sin(a));
+                ln.setAttribute('x2', CX_ring + ro * Math.cos(a));
+                ln.setAttribute('y2', CY_ring + ro * Math.sin(a));
+                ln.setAttribute('stroke', major ? 'rgba(0,255,204,.22)' : 'rgba(0,255,204,.06)');
                 ln.setAttribute('stroke-width', major ? '1.5' : '1');
                 rs.appendChild(ln);
             }
 
-            // glow halo
-            const glow = mkCirc('arc-glow', { r: R, stroke:'rgba(0,255,204,.1)', sw:12 });
-            glow.style.cssText = `stroke-dasharray:${CIRC};stroke-dashoffset:0;transition:stroke-dashoffset 1s linear,stroke .4s;`;
+            // Track (dim)
+            const track = mkCirc({ r:R_ring, stroke:'rgba(0,255,204,.045)', sw:2 });
+            rs.appendChild(track);
+
+            // Glow halo
+            const glow = mkCirc({ id:'arc-glow', r:R_ring, stroke:'rgba(0,255,204,.07)', sw:10 });
+            glow.style.cssText = `stroke-dasharray:${CIRC};stroke-dashoffset:0;transition:stroke-dashoffset 1s linear,stroke .9s;`;
             rs.appendChild(glow);
 
-            // track
-            rs.appendChild(mkCirc('arc-track', { r: R, stroke:'rgba(0,255,204,.055)', sw:3 }));
-
-            // fill
-            const fill = mkCirc('arc-fill', { r: R, stroke:'#00ffcc', sw:4, linecap:'round' });
+            // Fill arc
+            const fill = mkCirc({ id:'arc-fill', r:R_ring, stroke:'#00ffcc', sw:2.5, linecap:'round' });
             fill.style.cssText = `stroke-dasharray:${CIRC};stroke-dashoffset:0;
-                transition:stroke-dashoffset 1s linear,stroke .4s,filter .4s;
-                filter:drop-shadow(0 0 5px #00ffcc) drop-shadow(0 0 12px rgba(0,255,204,.45));`;
+                transition:stroke-dashoffset 1s linear,stroke .9s,filter .9s;
+                filter:drop-shadow(0 0 4px #00ffcc) drop-shadow(0 0 10px rgba(0,255,204,.4));`;
             rs.appendChild(fill);
 
-            // tip dot
+            // Tip dot
             const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            dot.setAttribute('id', 'arc-dot');
-            dot.setAttribute('r', '5');
+            dot.setAttribute('id', 'arc-dot'); dot.setAttribute('r', '4');
             dot.setAttribute('fill', '#00ffcc');
-            dot.style.cssText = 'filter:drop-shadow(0 0 4px #00ffcc);transition:fill .4s,filter .4s;';
+            dot.style.cssText = 'filter:drop-shadow(0 0 3px #00ffcc);transition:fill .9s,filter .9s;';
             rs.appendChild(dot);
             moveDot(0);
-
-            // seg labels
-            const sr = document.getElementById('seg-row');
-            if (sr) sr.innerHTML =
-                `<span style="width:2.5ch">HRS</span>
-                 <span style="width:.8ch"></span>
-                 <span style="width:2.5ch">MIN</span>
-                 <span style="width:.8ch"></span>
-                 <span style="width:2.5ch">SEC</span>`;
         }
 
-        function mkCirc(id, { r, stroke, sw, linecap }) {
+        function mkCirc({ id, r, stroke, sw, linecap }) {
             const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            el.setAttribute('id', id);
-            el.setAttribute('cx', CX); el.setAttribute('cy', CY); el.setAttribute('r', r);
-            el.setAttribute('fill', 'none');
-            el.setAttribute('stroke', stroke);
-            el.setAttribute('stroke-width', sw);
+            if (id) el.setAttribute('id', id);
+            el.setAttribute('cx', CX_ring); el.setAttribute('cy', CY_ring);
+            el.setAttribute('r', r); el.setAttribute('fill', 'none');
+            el.setAttribute('stroke', stroke); el.setAttribute('stroke-width', sw);
             if (linecap) el.setAttribute('stroke-linecap', linecap);
             return el;
         }
 
         function moveDot(offset) {
             const dot = document.getElementById('arc-dot');
-            if (!dot) return;
+            if (!dot || !R_ring) return;
             const frac = 1 - offset / CIRC;
             const ang  = frac * 2 * Math.PI - Math.PI / 2;
-            dot.setAttribute('cx', CX + R * Math.cos(ang));
-            dot.setAttribute('cy', CY + R * Math.sin(ang));
+            dot.setAttribute('cx', CX_ring + R_ring * Math.cos(ang));
+            dot.setAttribute('cy', CY_ring + R_ring * Math.sin(ang));
         }
 
         buildRing();
         addEventListener('resize', buildRing, { passive: true });
 
-        /* ── Log feed ────────────────────────────── */
+        // ── Color interpolation ────────────────────────────────────────
+        function hexToArr(hex) {
+            const h = parseInt(hex.replace('#',''), 16);
+            return [(h>>16)&255, (h>>8)&255, h&255];
+        }
+        function arrToHex([r,g,b]) {
+            return '#' + [r,g,b].map(v => Math.round(v).toString(16).padStart(2,'0')).join('');
+        }
+        function lerpColor(a, b, t) {
+            const A = hexToArr(a), B = hexToArr(b);
+            return arrToHex(A.map((v,i) => v + (B[i]-v)*t));
+        }
+
+        function getPhaseColor(rem) {
+            if (rem > WARN) {
+                return { c:'#00ffcc', rgb:'0,255,204', glow:'rgba(0,255,204,.5)', far:'rgba(0,255,204,.12)' };
+            }
+            if (rem > CRIT) {
+                const t = 1 - (rem - CRIT) / (WARN - CRIT);
+                const c = lerpColor('#00ffcc','#ffaa00', t);
+                const [r,g,b] = hexToArr(c);
+                return { c, rgb:`${r},${g},${b}`, glow:`rgba(${r},${g},${b},.5)`, far:`rgba(${r},${g},${b},.12)` };
+            }
+            if (rem > 0) {
+                const t = 1 - rem / CRIT;
+                const c = lerpColor('#ffaa00','#ff2b4e', t);
+                const [r,g,b] = hexToArr(c);
+                return { c, rgb:`${r},${g},${b}`, glow:`rgba(${r},${g},${b},.55)`, far:`rgba(${r},${g},${b},.15)` };
+            }
+            return { c:'#ff2b4e', rgb:'255,43,78', glow:'rgba(255,43,78,.55)', far:'rgba(255,43,78,.15)' };
+        }
+
+        function applyColor(rem) {
+            const { c, rgb, glow, far } = getPhaseColor(rem);
+            const root = document.documentElement;
+            root.style.setProperty('--pc',      c);
+            root.style.setProperty('--pc-glow', glow);
+            root.style.setProperty('--pc-far',  far);
+            root.style.setProperty('--pc-rgb',  rgb);
+            matrixRgb = rgb;
+
+            // Arc elements
+            const fill   = document.getElementById('arc-fill');
+            const glowEl = document.getElementById('arc-glow');
+            const dot    = document.getElementById('arc-dot');
+            if (fill)   { fill.setAttribute('stroke', c); fill.style.filter = `drop-shadow(0 0 4px ${c}) drop-shadow(0 0 10px ${far.replace('.12','.4')})`; }
+            if (glowEl) { glowEl.setAttribute('stroke', glow.replace('.07','.06')); }
+            if (dot)    { dot.setAttribute('fill', c); dot.style.filter = `drop-shadow(0 0 3px ${c})`; }
+
+            // Progress bar
+            const prog = document.getElementById('prog-fill');
+            if (prog) { prog.style.background = c; prog.style.boxShadow = `0 0 8px ${c}`; }
+
+            // Ambient orb
+            const orb = document.getElementById('bg-orb');
+            if (orb) orb.style.background = `radial-gradient(circle, rgba(${rgb},.04) 0%, transparent 68%)`;
+        }
+
+        // ── Phase switcher ─────────────────────────────────────────────
+        window._setPhase = (phase) => {
+            const pre    = document.getElementById('panel-prestart');
+            const active = document.getElementById('panel-active');
+            const endOv  = document.getElementById('end-overlay');
+
+            if (phase === 'prestart') {
+                pre.style.display    = 'flex';
+                active.style.display = 'none';
+                endOv.classList.remove('show');
+            } else if (phase === 'running') {
+                pre.style.display    = 'none';
+                active.style.display = 'flex';
+                endOv.classList.remove('show');
+                _setStatusLabels('running');
+            } else if (phase === 'ended') {
+                endOv.classList.add('show');
+                _setStatusLabels('ended');
+                window._burstParticles('#ff2b4e');
+            }
+        };
+
+        function _setStatusLabels(phase) {
+            const netL = document.getElementById('net-lbl');
+            const tmrL = document.getElementById('tmr-lbl');
+            const netD = document.getElementById('net-dot');
+            const tmrD = document.getElementById('tmr-dot');
+            const sub  = document.getElementById('disp-sub');
+
+            if (phase === 'running') {
+                if (netL) netL.textContent = 'Network Secure';
+                if (tmrL) tmrL.textContent = 'Timer: Running';
+                if (netD) netD.className = 'sdot g';
+                if (tmrD) tmrD.className = 'sdot g';
+                if (sub)  sub.textContent  = 'session live';
+            } else if (phase === 'warn') {
+                if (netL) netL.textContent = 'Warning — Final Hour';
+                if (tmrL) tmrL.textContent = 'Timer: Warning';
+                if (netD) netD.className = 'sdot y';
+                if (tmrD) tmrD.className = 'sdot y';
+            } else if (phase === 'crit') {
+                if (netL) netL.textContent = 'CRITICAL — Final Phase';
+                if (tmrL) tmrL.textContent = 'Timer: Critical';
+                if (netD) netD.className = 'sdot r';
+                if (tmrD) tmrD.className = 'sdot r';
+            } else if (phase === 'ended') {
+                if (netL) netL.textContent = 'System Compromised';
+                if (tmrL) tmrL.textContent = 'Timer: Terminated';
+                if (netD) netD.className = 'sdot r';
+                if (tmrD) tmrD.className = 'sdot r';
+                if (sub)  sub.textContent  = 'session over';
+            } else if (phase === 'paused') {
+                if (tmrL) tmrL.textContent = 'Timer: Paused';
+                if (tmrD) tmrD.className = 'sdot y';
+                if (sub)  sub.textContent  = 'paused';
+            }
+        }
+
+        // ── Digit updater ──────────────────────────────────────────────
+        const prevVals = { h:'', m:'', s:'' };
+
+        window._setDigits = (remSec) => {
+            const h   = Math.floor(Math.max(0, remSec) / 3600);
+            const m   = Math.floor((Math.max(0, remSec) % 3600) / 60);
+            const s   = Math.floor(Math.max(0, remSec) % 60);
+            const pad = n => String(n).padStart(2,'0');
+            const ph  = pad(h), pm = pad(m), ps = pad(s);
+
+            const dh = document.getElementById('d-hrs');
+            const dm = document.getElementById('d-min');
+            const ds = document.getElementById('d-sec');
+
+            function setWithFlip(el, val, prev) {
+                if (!el || val === prev) return;
+                el.textContent = val;
+                el.classList.remove('flip');
+                // Force reflow
+                void el.offsetWidth;
+                el.classList.add('flip');
+            }
+
+            setWithFlip(dh, ph, prevVals.h); prevVals.h = ph;
+            setWithFlip(dm, pm, prevVals.m); prevVals.m = pm;
+            setWithFlip(ds, ps, prevVals.s); prevVals.s = ps;
+
+            // Color phase
+            applyColor(remSec);
+
+            // Status labels based on thresholds
+            if (remSec <= 0)       _setStatusLabels('ended');
+            else if (remSec <= CRIT) _setStatusLabels('crit');
+            else if (remSec <= WARN) _setStatusLabels('warn');
+            else                     _setStatusLabels('running');
+
+            // Arc
+            const fill   = document.getElementById('arc-fill');
+            const glowEl = document.getElementById('arc-glow');
+            if (fill && CIRC) {
+                const off = CIRC * (1 - Math.max(0, Math.min(1, remSec / TOTAL)));
+                fill.style.strokeDashoffset   = off;
+                if (glowEl) glowEl.style.strokeDashoffset = off;
+                moveDot(off);
+            }
+
+            // Progress bar scale
+            const prog = document.getElementById('prog-fill');
+            if (prog) prog.style.transform = `scaleX(${Math.max(0, Math.min(1, remSec / TOTAL))})`;
+        };
+
+        // Backwards compat — codeshield-ui.js may call _updateArc
+        window._updateArc = (rem) => window._setDigits(rem);
+
+        // ── Pre-start updater ──────────────────────────────────────────
+        const prevPs = { d:'', h:'', m:'', s:'' };
+
+        window._updatePrestart = (secsUntilStart) => {
+            const days = Math.floor(secsUntilStart / 86400);
+            const hrs  = Math.floor((secsUntilStart % 86400) / 3600);
+            const mins = Math.floor((secsUntilStart % 3600) / 60);
+            const secs = Math.floor(secsUntilStart % 60);
+            const pad  = n => String(n).padStart(2,'0');
+            const pd = pad(days), ph = pad(hrs), pm = pad(mins), ps = pad(secs);
+
+            function setWithTick(id, val, prev) {
+                const el = document.getElementById(id);
+                if (!el || val === prev) return;
+                el.textContent = val;
+                el.classList.remove('tick');
+                void el.offsetWidth;
+                el.classList.add('tick');
+            }
+
+            setWithTick('ps-days', pd, prevPs.d); prevPs.d = pd;
+            setWithTick('ps-hrs',  ph, prevPs.h); prevPs.h = ph;
+            setWithTick('ps-min',  pm, prevPs.m); prevPs.m = pm;
+            setWithTick('ps-sec',  ps, prevPs.s); prevPs.s = ps;
+        };
+
+        // ── Paused visual ──────────────────────────────────────────────
+        window._setPaused = (rem) => {
+            const badge = document.getElementById('paused-badge');
+            if (badge) badge.classList.add('show');
+            _setStatusLabels('paused');
+            window._setDigits(rem);
+        };
+
+        // ── Log feed ───────────────────────────────────────────────────
         const lp = document.getElementById('log-panel');
         window._addLog = (msg, level) => {
             const ts = new Date().toLocaleTimeString('en-IN', { hour12: false });
@@ -677,79 +1164,20 @@
         };
         window._addLog('Console online. Awaiting ignition.');
 
-        /* ── Arc update (called by codeshield-ui.js) */
-        window._updateArc = (rem) => {
-            const fill = document.getElementById('arc-fill');
-            const glow = document.getElementById('arc-glow');
-            const dot  = document.getElementById('arc-dot');
-            const disp = document.getElementById('countdown-display');
-            const prog = document.getElementById('prog-fill');
-            if (!fill) return;
-
-            const frac = Math.max(0, Math.min(1, rem / TOTAL));
-            const off  = CIRC * (1 - frac);
-            fill.style.strokeDashoffset = off;
-            glow.style.strokeDashoffset = off;
-            moveDot(off);
-            if (prog) prog.style.transform = `scaleX(${frac})`;
-
-            const nd  = document.getElementById('net-dot');
-            const td  = document.getElementById('tmr-dot');
-            const nl  = document.getElementById('net-lbl');
-            const tl  = document.getElementById('tmr-lbl');
-            const sub = document.getElementById('disp-sub');
-
-            function cls(el, c) {
-                el.classList.remove('warn','crit');
-                if (c) el.classList.add(c);
-            }
-            function dotCls(el, c) {
-                el.classList.remove('g','y','r');
-                el.classList.add(c);
-            }
-
-            if (rem <= 0) {
-                [fill,glow,dot,disp,prog].forEach(e => e && cls(e,'crit'));
-                if (nd)  dotCls(nd,'r');
-                if (td)  dotCls(td,'r');
-                nl.textContent  = 'System Compromised';
-                tl.textContent  = 'Timer: TERMINATED';
-                sub.textContent = 'session over';
-                document.getElementById('end-overlay').classList.add('show');
-                window._addLog('SESSION EXPIRED — system compromised.', 'crit');
-            } else if (rem <= 1800) {
-                [fill,glow,dot,disp,prog].forEach(e => e && cls(e,'crit'));
-                if (nd)  dotCls(nd,'r');
-                if (td)  dotCls(td,'r');
-                nl.textContent = 'CRITICAL — Final Phase';
-                tl.textContent = 'Timer: Critical';
-            } else if (rem <= 5400) {
-                [fill,glow,dot,disp,prog].forEach(e => e && cls(e,'warn'));
-                if (nd)  dotCls(nd,'y');
-                nl.textContent = 'Warning — Mid Phase';
-                tl.textContent = 'Timer: Warning';
-            } else {
-                [fill,glow,dot,disp,prog].forEach(e => e && cls(e,null));
-                if (nd)  dotCls(nd,'g');
-                if (td)  dotCls(td,'g');
-                tl.textContent = 'Timer: Running';
-            }
-        };
-
-        /* ── Particles ───────────────────────────── */
+        // ── Particles ─────────────────────────────────────────────────
         window._burstParticles = (col = '#00ffcc') => {
             const cx = innerWidth / 2, cy = innerHeight / 2;
-            for (let i = 0; i < 50; i++) {
+            for (let i = 0; i < 60; i++) {
                 const p   = document.createElement('div');
                 p.className = 'pt';
                 const ang  = Math.random() * 2 * Math.PI;
-                const dist = 60 + Math.random() * 230;
-                const sz   = 2 + Math.random() * 3;
-                const dur  = 500 + Math.random() * 700;
+                const dist = 60 + Math.random() * 260;
+                const sz   = 2 + Math.random() * 4;
+                const dur  = 500 + Math.random() * 800;
                 p.style.cssText = `
                     left:${cx}px;top:${cy}px;
                     width:${sz}px;height:${sz}px;
-                    background:${Math.random() > .4 ? col : '#fff'};
+                    background:${Math.random()>.45?col:'#fff'};
                     box-shadow:0 0 6px ${col};
                     transition:transform ${dur}ms ease,opacity ${dur}ms ease;
                     opacity:1;
@@ -757,57 +1185,60 @@
                 document.body.appendChild(p);
                 requestAnimationFrame(() => requestAnimationFrame(() => {
                     p.style.transform = `translate(${Math.cos(ang)*dist}px,${Math.sin(ang)*dist}px)`;
-                    p.style.opacity = '0';
+                    p.style.opacity   = '0';
                 }));
                 setTimeout(() => p.remove(), dur + 60);
             }
         };
 
-        /* ── Button hooks ────────────────────────── */
-        document.getElementById('btn-start').addEventListener('click', () => {
-            window._burstParticles('#00ffcc');
-            document.getElementById('tmr-lbl').textContent  = 'Timer: Running';
-            document.getElementById('disp-sub').textContent = 'session live';
-            window._addLog('Hackathon INITIATED — 7-hour clock started.');
-        });
-        document.getElementById('btn-pause').addEventListener('click', () => {
-            document.getElementById('tmr-lbl').textContent  = 'Timer: Paused';
-            document.getElementById('disp-sub').textContent = 'paused';
-            window._addLog('Clock PAUSED by operator.', 'warn');
-        });
-
+        // ── End overlay reset ──────────────────────────────────────────
         const doReset = () => {
             document.getElementById('end-overlay').classList.remove('show');
-            const ids = ['arc-fill','arc-glow','arc-dot',
-                         'countdown-display','prog-fill'];
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.remove('warn','crit');
-            });
-            const fill = document.getElementById('arc-fill');
-            const glow = document.getElementById('arc-glow');
-            const prog = document.getElementById('prog-fill');
-            if (fill) fill.style.strokeDashoffset = 0;
-            if (glow) glow.style.strokeDashoffset = 0;
-            if (prog) prog.style.transform = 'scaleX(1)';
+            const badge = document.getElementById('paused-badge');
+            if (badge) badge.classList.remove('show');
+            // Restore base cyan
+            const root = document.documentElement;
+            root.style.setProperty('--pc',      '#00ffcc');
+            root.style.setProperty('--pc-glow', 'rgba(0,255,204,.5)');
+            root.style.setProperty('--pc-far',  'rgba(0,255,204,.12)');
+            root.style.setProperty('--pc-rgb',  '0,255,204');
+            matrixRgb = '0,255,204';
+
+            const fill   = document.getElementById('arc-fill');
+            const glowEl = document.getElementById('arc-glow');
+            const dot    = document.getElementById('arc-dot');
+            const prog   = document.getElementById('prog-fill');
+            if (fill)   { fill.style.strokeDashoffset   = 0; fill.setAttribute('stroke','#00ffcc'); }
+            if (glowEl) { glowEl.style.strokeDashoffset = 0; }
+            if (dot)    dot.setAttribute('fill','#00ffcc');
+            if (prog)   { prog.style.transform = 'scaleX(1)'; prog.style.background='#00ffcc'; }
             moveDot(0);
-            const nd = document.getElementById('net-dot');
-            const td = document.getElementById('tmr-dot');
-            if (nd) { nd.classList.remove('y','r'); nd.classList.add('g'); }
-            if (td) { td.classList.remove('y','r'); td.classList.add('g'); }
-            document.getElementById('net-lbl').textContent  = 'Network Secure';
-            document.getElementById('tmr-lbl').textContent  = 'Timer: Standby';
-            document.getElementById('disp-sub').textContent = 'awaiting ignition';
+
+            _setStatusLabels('running');
             window._addLog('System RESET by operator.', 'crit');
             window._burstParticles('#ff2b4e');
         };
-        document.getElementById('btn-reset').addEventListener('click', doReset);
         document.getElementById('btn-end-reset').addEventListener('click', doReset);
+
+        // ── Button visual hooks ────────────────────────────────────────
+        document.getElementById('btn-start').addEventListener('click', () => {
+            window._burstParticles('#00ffcc');
+            const badge = document.getElementById('paused-badge');
+            if (badge) badge.classList.remove('show');
+            window._addLog('Force-initiate received.', '');
+        });
+        document.getElementById('btn-pause').addEventListener('click', () => {
+            // Actual logic handled in codeshield-ui.js
+        });
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            const badge = document.getElementById('paused-badge');
+            if (badge) badge.classList.remove('show');
+        });
 
     })();
     </script>
 
-    <!-- ── Timer engine (Firebase sync + button logic) ── -->
+    <!-- ── Timer engine (Firebase sync + auto-start logic) ── -->
     <script type="module" src="../../scripts/events/codeshield-ui.js"></script>
 
 </body>
