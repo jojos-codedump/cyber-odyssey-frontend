@@ -5,260 +5,1095 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cyber Odyssey 2.0 | Enter the Grid</title>
     <link rel="stylesheet" href="styles/global.css">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
     <style>
-        /* Lightweight Landing Page Specific Styles */
-        body {
-            margin: 0;
-            background-color: #050505;
-            color: #e0e0e0;
-            font-family: 'Courier New', Courier, monospace;
-            overflow-x: hidden;
+        /* ─── CSS Variables ─────────────────────────────────── */
+        :root {
+            --cyan:        #00ffcc;
+            --cyan-dim:    rgba(0,255,204,0.08);
+            --cyan-glow:   rgba(0,255,204,0.35);
+            --red:         #ff2b4e;
+            --yellow:      #f0e040;
+            --bg:          #050507;
+            --bg-2:        #080810;
+            --bg-card:     #0c0c16;
+            --border:      rgba(0,255,204,0.15);
+            --text:        #c8ccd8;
+            --text-dim:    #565970;
+            --font-display: 'Orbitron', monospace;
+            --font-mono:    'Share Tech Mono', monospace;
         }
 
-        /* Navigation Navbar */
+        /* ─── Reset & Base ──────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-mono);
+            overflow-x: hidden;
+            cursor: none; /* custom cursor */
+        }
+
+        a { text-decoration: none; color: inherit; }
+        img { display: block; max-width: 100%; }
+
+        /* ─── Custom Cursor ─────────────────────────────────── */
+        .cursor-dot,
+        .cursor-ring {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: opacity .3s;
+        }
+        .cursor-dot {
+            width: 6px; height: 6px;
+            background: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan);
+        }
+        .cursor-ring {
+            width: 32px; height: 32px;
+            border: 1px solid rgba(0,255,204,0.5);
+            transition: width .2s, height .2s, border-color .2s;
+        }
+        body:not(.touch) a:hover ~ .cursor-ring,
+        body:not(.touch) button:hover ~ .cursor-ring {
+            width: 48px; height: 48px;
+            border-color: var(--cyan);
+        }
+        @media (pointer: coarse) {
+            .cursor-dot, .cursor-ring { display: none; }
+            body { cursor: auto; }
+        }
+
+        /* ─── Scanline Overlay ──────────────────────────────── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 2px,
+                rgba(0,0,0,0.04) 2px,
+                rgba(0,0,0,0.04) 4px
+            );
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        /* ─── Navbar ────────────────────────────────────────── */
         .navbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 50px;
-            background: rgba(5, 5, 5, 0.9);
-            border-bottom: 1px solid #111;
+            padding: 18px 60px;
+            background: rgba(5,5,7,0.82);
+            border-bottom: 1px solid var(--border);
             position: fixed;
             width: 100%;
             top: 0;
             z-index: 1000;
             box-sizing: border-box;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            transition: padding .3s;
+        }
+        .navbar.scrolled {
+            padding: 12px 60px;
+            background: rgba(5,5,7,0.96);
         }
 
         .navbar .logo {
-            font-size: 1.5rem;
-            color: #00ffcc;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
-            text-decoration: none;
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--cyan);
+            letter-spacing: 4px;
+            text-shadow: 0 0 14px var(--cyan-glow);
+            position: relative;
+        }
+        /* blinking cursor after logo */
+        .navbar .logo::after {
+            content: '_';
+            animation: blink-cursor .9s step-end infinite;
+            color: var(--cyan);
+        }
+        @keyframes blink-cursor { 50% { opacity: 0; } }
+
+        .nav-links { display: flex; align-items: center; gap: 36px; }
+
+        .nav-links a {
+            font-family: var(--font-mono);
+            font-size: .82rem;
+            color: var(--text-dim);
             letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: color .25s;
+            position: relative;
         }
-
-        .navbar .nav-links a {
-            color: #aaa;
-            text-decoration: none;
-            margin-left: 30px;
-            transition: color 0.3s ease;
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; left: 0;
+            width: 0; height: 1px;
+            background: var(--cyan);
+            transition: width .3s;
         }
-
-        .navbar .nav-links a:hover {
-            color: #00ffcc;
-        }
+        .nav-links a:hover { color: var(--cyan); }
+        .nav-links a:hover::after { width: 100%; }
 
         .btn-outline {
-            border: 1px solid #00ffcc;
-            color: #00ffcc;
-            padding: 8px 20px;
-            border-radius: 4px;
-            text-decoration: none;
-            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+            color: var(--cyan) !important;
+            padding: 8px 22px;
+            border-radius: 2px;
+            font-size: .78rem !important;
+            letter-spacing: 2px;
+            transition: background .25s, box-shadow .25s, border-color .25s !important;
         }
-
+        .btn-outline::after { display: none !important; }
         .btn-outline:hover {
-            background: #00ffcc;
-            color: #000;
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+            background: var(--cyan-dim);
+            border-color: var(--cyan);
+            box-shadow: 0 0 18px rgba(0,255,204,0.2);
         }
 
-        /* Hero Section */
+        /* hamburger */
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 4px;
+            background: none;
+            border: none;
+        }
+        .nav-toggle span {
+            display: block;
+            width: 24px; height: 1px;
+            background: var(--cyan);
+            transition: transform .3s, opacity .3s;
+        }
+        .nav-toggle.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+        .nav-toggle.open span:nth-child(2) { opacity: 0; }
+        .nav-toggle.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+        /* ─── Hero ──────────────────────────────────────────── */
         .hero {
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding: 0 20px;
-            background: radial-gradient(circle at center, #111 0%, #050505 100%);
+            padding: 120px 30px 80px;
             position: relative;
+            overflow: hidden;
         }
 
+        /* Animated grid */
         .hero::before {
-            content: "";
+            content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px);
-            background-size: 30px 30px;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,255,204,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,204,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: grid-drift 20s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes grid-drift {
+            from { background-position: 0 0; }
+            to   { background-position: 40px 40px; }
+        }
+
+        /* Radial vignette */
+        .hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 30%, var(--bg) 100%);
             pointer-events: none;
         }
 
-        .hero h1 {
-            font-size: 4rem;
-            color: #fff;
-            margin-bottom: 10px;
-            letter-spacing: 5px;
+        /* Canvas for digital rain */
+        #matrix-canvas {
+            position: absolute;
+            inset: 0;
+            opacity: .18;
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 820px;
+        }
+
+        .hero-eyebrow {
+            font-size: .72rem;
+            letter-spacing: 6px;
+            color: var(--cyan);
             text-transform: uppercase;
+            margin-bottom: 28px;
+            opacity: 0;
+            animation: fade-up .6s ease forwards .2s;
         }
 
-        .hero h1 span {
-            color: #00ffcc;
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.6rem, 7vw, 5.2rem);
+            font-weight: 900;
+            color: #fff;
+            line-height: 1.1;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            opacity: 0;
+            animation: fade-up .7s ease forwards .45s;
+        }
+        .hero h1 .accent { color: var(--cyan); text-shadow: 0 0 24px var(--cyan-glow); }
+
+        /* glitch on the accent word */
+        .glitch {
+            position: relative;
+            display: inline-block;
+        }
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            inset: 0;
+            color: var(--cyan);
+            text-shadow: none;
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--red);
+            clip-path: inset(20% 0 60% 0);
+            animation: glitch-top 4s infinite linear;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: 2px 0 #1100ff;
+            clip-path: inset(60% 0 10% 0);
+            animation: glitch-bot 4s infinite linear;
+        }
+        @keyframes glitch-top {
+            0%,79%,81%,100% { clip-path: inset(20% 0 60% 0); transform: translate(0); }
+            80% { clip-path: inset(5% 0 75% 0); transform: translate(-3px, -2px); }
+        }
+        @keyframes glitch-bot {
+            0%,69%,71%,100% { clip-path: inset(60% 0 10% 0); transform: translate(0); }
+            70% { clip-path: inset(75% 0 5% 0); transform: translate(3px, 2px); }
         }
 
-        .hero p {
-            font-size: 1.2rem;
-            color: #888;
-            max-width: 600px;
-            margin-bottom: 40px;
-            line-height: 1.6;
+        .hero-sub {
+            font-size: clamp(.88rem, 2vw, 1.05rem);
+            color: #6b7090;
+            max-width: 540px;
+            margin: 0 auto 48px;
+            line-height: 1.8;
+            opacity: 0;
+            animation: fade-up .7s ease forwards .7s;
+        }
+        .hero-sub .type-cursor {
+            display: inline-block;
+            width: 2px; height: 1em;
+            background: var(--cyan);
+            vertical-align: text-bottom;
+            margin-left: 2px;
+            animation: blink-cursor .9s step-end infinite;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 18px;
+            justify-content: center;
+            flex-wrap: wrap;
+            opacity: 0;
+            animation: fade-up .7s ease forwards .95s;
         }
 
         .btn-glow {
-            background: #00ffcc;
+            font-family: var(--font-display);
+            background: var(--cyan);
             color: #000;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            text-decoration: none;
+            padding: 14px 42px;
+            font-size: .82rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
             border: none;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
-            font-family: inherit;
+            border-radius: 2px;
+            transition: box-shadow .3s, transform .2s;
+            box-shadow: 0 0 24px rgba(0,255,204,0.3), inset 0 0 0 1px rgba(255,255,255,0.15);
+            position: relative;
+            overflow: hidden;
         }
-
+        .btn-glow::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+            transition: left .5s;
+        }
+        .btn-glow:hover::before { left: 160%; }
         .btn-glow:hover {
-            box-shadow: 0 0 40px rgba(0, 255, 204, 0.6);
+            box-shadow: 0 0 40px rgba(0,255,204,0.55), inset 0 0 0 1px rgba(255,255,255,0.2);
             transform: translateY(-2px);
         }
 
-        /* Events Grid Showcase */
-        .events-section {
-            padding: 100px 50px;
-            background: #0a0a0a;
+        .btn-ghost {
+            font-family: var(--font-display);
+            background: transparent;
+            color: var(--cyan);
+            padding: 14px 36px;
+            font-size: .82rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: border-color .3s, background .3s, transform .2s;
+        }
+        .btn-ghost:hover {
+            border-color: var(--cyan);
+            background: var(--cyan-dim);
+            transform: translateY(-2px);
         }
 
-        .section-title {
+        /* scroll indicator */
+        .scroll-hint {
+            position: absolute;
+            bottom: 36px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            animation: fade-in .6s ease forwards 1.6s;
+        }
+        .scroll-hint span {
+            font-size: .65rem;
+            letter-spacing: 3px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+        .scroll-arrow {
+            width: 18px; height: 18px;
+            border-right: 1px solid var(--text-dim);
+            border-bottom: 1px solid var(--text-dim);
+            transform: rotate(45deg);
+            animation: bounce-down 1.6s ease-in-out infinite;
+        }
+        @keyframes bounce-down {
+            0%,100% { transform: rotate(45deg) translate(0,0); }
+            50%      { transform: rotate(45deg) translate(4px,4px); }
+        }
+
+        /* ─── Stats Strip ───────────────────────────────────── */
+        .stats-strip {
+            background: var(--bg-2);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 40px 60px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0;
+        }
+        .stat-item {
             text-align: center;
-            color: #fff;
-            font-size: 2.5rem;
-            margin-bottom: 50px;
-            letter-spacing: 2px;
+            padding: 20px;
+            position: relative;
+        }
+        .stat-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 20%; right: 0;
+            height: 60%; width: 1px;
+            background: var(--border);
+        }
+        .stat-num {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--cyan);
+            text-shadow: 0 0 20px var(--cyan-glow);
+            line-height: 1;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .stat-label {
+            font-size: .7rem;
+            letter-spacing: 3px;
+            color: var(--text-dim);
+            text-transform: uppercase;
         }
 
+        /* ─── Events Section ────────────────────────────────── */
+        .events-section {
+            padding: 120px 60px;
+            background: var(--bg);
+            position: relative;
+        }
+        .events-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 70px;
+        }
+        .section-eyebrow {
+            font-size: .68rem;
+            letter-spacing: 5px;
+            color: var(--cyan);
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            display: block;
+        }
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(1.6rem, 4vw, 2.6rem);
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .section-title span { color: var(--cyan); }
+        .section-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .section-divider span {
+            font-size: .7rem; letter-spacing: 3px; color: var(--text-dim);
+        }
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            max-width: 120px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border));
+        }
+        .section-divider::after {
+            background: linear-gradient(90deg, var(--border), transparent);
+        }
+
+        /* Events Grid */
         .events-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
             max-width: 1200px;
             margin: 0 auto;
         }
 
-        /* Upgraded to act as clickable anchor links */
         .event-card {
-            display: block;
-            text-decoration: none;
-            background: #111;
-            border: 1px solid #222;
-            padding: 30px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            border-top: 3px solid #333;
-            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-card);
+            border: 1px solid rgba(0,255,204,0.08);
+            padding: 36px 32px;
+            border-radius: 4px;
+            transition: transform .35s cubic-bezier(.23,1,.32,1),
+                        border-color .35s, box-shadow .35s;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(24px);
+        }
+        .event-card.visible {
+            animation: card-in .55s ease forwards;
+        }
+        @keyframes card-in {
+            to { opacity: 1; transform: translateY(0); }
         }
 
+        /* top accent line */
+        .event-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--card-color, var(--cyan)), transparent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform .4s ease;
+        }
+        .event-card:hover::before { transform: scaleX(1); }
+
+        /* noise texture overlay */
+        .event-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0;
+            transition: opacity .3s;
+            pointer-events: none;
+            border-radius: 4px;
+        }
+        .event-card:hover::after { opacity: 1; }
+
         .event-card:hover {
-            border-top-color: #00ffcc;
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            background: #151515;
+            transform: translateY(-6px);
+            border-color: var(--card-color, rgba(0,255,204,0.3));
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6),
+                        0 0 30px rgba(0,255,204,0.06);
+        }
+
+        /* grid placement — feature card spans 7 columns */
+        .event-card:nth-child(1) { grid-column: span 7; }
+        .event-card:nth-child(2) { grid-column: span 5; }
+        .event-card:nth-child(3) { grid-column: span 4; }
+        .event-card:nth-child(4) { grid-column: span 4; }
+        .event-card:nth-child(5) { grid-column: span 4; }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px;
+        }
+        .card-index {
+            font-size: .65rem;
+            letter-spacing: 3px;
+            color: var(--text-dim);
+        }
+        .card-tag {
+            font-size: .62rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border: 1px solid currentColor;
+            border-radius: 2px;
+            opacity: .7;
         }
 
         .event-card h3 {
-            color: #00ffcc;
-            font-size: 1.5rem;
-            margin-bottom: 15px;
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+            line-height: 1.3;
         }
+        .event-card:nth-child(1) h3 { font-size: 1.6rem; }
 
         .event-card p {
-            color: #aaa;
-            line-height: 1.5;
-            font-size: 0.95rem;
+            font-size: .85rem;
+            color: var(--text-dim);
+            line-height: 1.7;
+            flex: 1;
+            margin-bottom: 28px;
         }
 
-        .event-card .tag {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 5px 10px;
-            background: rgba(0, 255, 204, 0.1);
-            color: #00ffcc;
-            font-size: 0.8rem;
-            border: 1px solid rgba(0, 255, 204, 0.2);
-            border-radius: 4px;
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.04);
+        }
+        .card-participants {
+            font-size: .7rem;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+        }
+        .card-arrow {
+            width: 32px; height: 32px;
+            border: 1px solid rgba(0,255,204,0.2);
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--cyan);
+            font-size: 1rem;
+            transition: background .25s, border-color .25s, transform .25s;
+        }
+        .event-card:hover .card-arrow {
+            background: var(--cyan-dim);
+            border-color: var(--cyan);
+            transform: translate(2px, -2px);
         }
 
-        footer {
+        /* individual card colours */
+        .event-card:nth-child(1) { --card-color: #00ffcc; }
+        .event-card:nth-child(2) { --card-color: #ff2b4e; }
+        .event-card:nth-child(3) { --card-color: #a259ff; }
+        .event-card:nth-child(4) { --card-color: #f0e040; }
+        .event-card:nth-child(5) { --card-color: #00b4ff; }
+
+        .event-card:nth-child(1) .card-tag { color: #00ffcc; }
+        .event-card:nth-child(2) .card-tag { color: #ff2b4e; }
+        .event-card:nth-child(3) .card-tag { color: #a259ff; }
+        .event-card:nth-child(4) .card-tag { color: #f0e040; }
+        .event-card:nth-child(5) .card-tag { color: #00b4ff; }
+
+        /* ─── CTA Banner ────────────────────────────────────── */
+        .cta-banner {
+            background: var(--bg-2);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 90px 60px;
             text-align: center;
-            padding: 30px;
-            background: #050505;
-            color: #555;
-            border-top: 1px solid #111;
-            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-banner::before {
+            content: '';
+            position: absolute;
+            top: -60px; left: 50%;
+            transform: translateX(-50%);
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(0,255,204,0.06) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .cta-banner h2 {
+            font-family: var(--font-display);
+            font-size: clamp(1.4rem, 4vw, 2.2rem);
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+        .cta-banner p {
+            color: var(--text-dim);
+            font-size: .9rem;
+            margin-bottom: 38px;
+            letter-spacing: 1px;
+        }
+
+        /* ─── Footer ────────────────────────────────────────── */
+        footer {
+            padding: 40px 60px;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .footer-logo {
+            font-family: var(--font-display);
+            font-size: .85rem;
+            color: var(--cyan);
+            letter-spacing: 4px;
+            opacity: .6;
+        }
+        .footer-copy {
+            font-size: .72rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+        .footer-links {
+            display: flex;
+            gap: 28px;
+        }
+        .footer-links a {
+            font-size: .72rem;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            transition: color .25s;
+        }
+        .footer-links a:hover { color: var(--cyan); }
+
+        /* ─── Keyframes ─────────────────────────────────────── */
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fade-in {
+            to { opacity: 1; }
+        }
+
+        /* ─── Mobile Nav Drawer ─────────────────────────────── */
+        @media (max-width: 768px) {
+            .navbar { padding: 16px 24px; }
+            .navbar.scrolled { padding: 12px 24px; }
+            .nav-links {
+                position: fixed;
+                top: 0; right: -100%;
+                width: min(320px, 80vw);
+                height: 100vh;
+                background: rgba(8,8,16,0.97);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                justify-content: center;
+                align-items: flex-start;
+                padding: 60px 40px;
+                gap: 32px;
+                border-left: 1px solid var(--border);
+                transition: right .35s cubic-bezier(.23,1,.32,1);
+                z-index: 999;
+            }
+            .nav-links.open { right: 0; }
+            .nav-links a { font-size: 1rem; }
+            .btn-outline { padding: 10px 24px; font-size: .85rem !important; }
+            .nav-toggle { display: flex; z-index: 1001; }
+
+            .hero { padding: 100px 24px 80px; }
+            .hero h1 { letter-spacing: 2px; }
+
+            .stats-strip { padding: 32px 24px; }
+            .stat-item:not(:last-child)::after { display: none; }
+            .stat-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+            .stat-item:last-child { border-bottom: none; }
+
+            .events-section { padding: 80px 24px; }
+
+            .events-grid { grid-template-columns: 1fr; gap: 16px; }
+            .event-card:nth-child(1),
+            .event-card:nth-child(2),
+            .event-card:nth-child(3),
+            .event-card:nth-child(4),
+            .event-card:nth-child(5) { grid-column: span 1; }
+            .event-card:nth-child(1) h3 { font-size: 1.3rem; }
+
+            .cta-banner { padding: 60px 24px; }
+            footer { padding: 30px 24px; flex-direction: column; text-align: center; }
+            .footer-links { justify-content: center; }
+        }
+
+        @media (min-width: 769px) and (max-width: 1100px) {
+            .navbar { padding: 18px 36px; }
+            .events-section { padding: 100px 36px; }
+            .events-grid { grid-template-columns: repeat(6, 1fr); }
+            .event-card:nth-child(1) { grid-column: span 6; }
+            .event-card:nth-child(2) { grid-column: span 3; }
+            .event-card:nth-child(3) { grid-column: span 3; }
+            .event-card:nth-child(4) { grid-column: span 3; }
+            .event-card:nth-child(5) { grid-column: span 3; }
         }
     </style>
 </head>
 <body>
 
-    <nav class="navbar">
+    <!-- Custom Cursor -->
+    <div class="cursor-dot"  id="cursor-dot"></div>
+    <div class="cursor-ring" id="cursor-ring"></div>
+
+    <!-- ── Navbar ─────────────────────────────── -->
+    <nav class="navbar" id="navbar">
         <a href="#" class="logo">CYBER_ODYSSEY</a>
-        <div class="nav-links">
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="nav-links" id="nav-links">
             <a href="#events">The Events</a>
             <a href="pages/auth/login.html" class="btn-outline">System Login</a>
         </div>
     </nav>
 
+    <!-- ── Hero ──────────────────────────────── -->
     <section class="hero">
-        <h1>Welcome to the <span>Grid</span></h1>
-        <p>The ultimate technical symposium. Compete in high-stakes hackathons, engage in digital debates, and exploit network vulnerabilities. Secure your node today.</p>
-        <a href="pages/auth/register.html" class="btn-glow">INITIALIZE REGISTRATION</a>
-    </section>
+        <canvas id="matrix-canvas"></canvas>
 
-    <section id="events" class="events-section">
-        <h2 class="section-title">ACTIVE DIRECTORIES</h2>
-        
-        <div class="events-grid">
-            <a href="pages/events/codeshield.html" class="event-card">
-                <h3>CodeShield</h3>
-                <p>A grueling 7-hour hackathon where developers build secure, resilient software solutions under intense pressure. Defend your codebase.</p>
-                <span class="tag">DEV / SECURITY</span>
-            </a>
+        <div class="hero-content">
+            <p class="hero-eyebrow">CSE Department · Flagship Symposium · 2026</p>
 
-            <a href="pages/events/packet-hijackers.html" class="event-card">
-                <h3>Packet Hijackers</h3>
-                <p>An active Capture The Flag (CTF) and network exploitation arena. Find the vulnerabilities, bypass the firewalls, and capture the root flag.</p>
-                <span class="tag">PEN-TESTING / CTF</span>
-            </a>
+            <h1>
+                Welcome to the
+                <span class="accent">
+                    <span class="glitch" data-text="Grid">Grid</span>
+                </span>
+            </h1>
 
-            <a href="pages/events/cyber-visionary.html" class="event-card">
-                <h3>Cyber Visionary</h3>
-                <p>An ideathon structured as a dynamic tournament matrix. Pitch your most innovative tech solutions and advance through the bracket.</p>
-                <span class="tag">IDEATHON</span>
-            </a>
+            <p class="hero-sub" id="hero-sub"></p>
 
-            <a href="pages/events/digital-dilemma.html" class="event-card">
-                <h3>Digital Dilemma</h3>
-                <p>A fast-paced tech debate tournament. Argue the ethics, mechanics, and future of artificial intelligence, privacy, and system architectures.</p>
-                <span class="tag">DEBATE</span>
-            </a>
+            <div class="hero-cta">
+                <a href="pages/auth/register.html" class="btn-glow">Initialize Registration</a>
+                <a href="#events" class="btn-ghost">Explore Events</a>
+            </div>
+        </div>
 
-            <a href="pages/events/cyber-canvas.html" class="event-card">
-                <h3>Cyber Canvas</h3>
-                <p>A digital poster presentation gallery. Showcase complex technological concepts and research through compelling visual design.</p>
-                <span class="tag">DESIGN / PRESENTATION</span>
-            </a>
+        <div class="scroll-hint">
+            <span>Scroll</span>
+            <div class="scroll-arrow"></div>
         </div>
     </section>
 
+    <!-- ── Stats Strip ───────────────────────── -->
+    <div class="stats-strip">
+        <div class="stat-item">
+            <span class="stat-num" data-target="5">0</span>
+            <span class="stat-label">Active Events</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-num" data-target="7">0</span>
+            <span class="stat-label">Hour Hackathon</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-num" data-target="16">0</span>
+            <span class="stat-label">Bracket Slots</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-num" data-target="100">0</span>
+            <span class="stat-label">Max Participants</span>
+        </div>
+    </div>
+
+    <!-- ── Events Section ────────────────────── -->
+    <section id="events" class="events-section">
+        <div class="section-header">
+            <span class="section-eyebrow">// event_directory.list</span>
+            <h2 class="section-title">Active <span>Directories</span></h2>
+            <div class="section-divider"><span>5 modules loaded</span></div>
+        </div>
+
+        <div class="events-grid">
+
+            <a href="pages/events/codeshield.html" class="event-card">
+                <div class="card-meta">
+                    <span class="card-index">01 —</span>
+                    <span class="card-tag">Dev / Security</span>
+                </div>
+                <h3>CodeShield</h3>
+                <p>A grueling 7-hour hackathon where developers build secure, resilient software solutions under intense pressure. Teams of up to 3 defend their codebase against real-world attack vectors while racing the clock.</p>
+                <div class="card-footer">
+                    <span class="card-participants">Up to 3 nodes per team</span>
+                    <div class="card-arrow">↗</div>
+                </div>
+            </a>
+
+            <a href="pages/events/packet-hijackers.html" class="event-card">
+                <div class="card-meta">
+                    <span class="card-index">02 —</span>
+                    <span class="card-tag">Pen-Testing / CTF</span>
+                </div>
+                <h3>Packet Hijackers</h3>
+                <p>Active CTF and network exploitation arena. Find the vulnerabilities, bypass the firewalls, and capture the root flag before time runs out.</p>
+                <div class="card-footer">
+                    <span class="card-participants">2-node teams</span>
+                    <div class="card-arrow">↗</div>
+                </div>
+            </a>
+
+            <a href="pages/events/cyber-visionary.html" class="event-card">
+                <div class="card-meta">
+                    <span class="card-index">03 —</span>
+                    <span class="card-tag">Ideathon</span>
+                </div>
+                <h3>Cyber Visionary</h3>
+                <p>Dynamic tournament bracket. Pitch your most innovative tech solutions and advance through elimination rounds.</p>
+                <div class="card-footer">
+                    <span class="card-participants">2-node teams</span>
+                    <div class="card-arrow">↗</div>
+                </div>
+            </a>
+
+            <a href="pages/events/digital-dilemma.html" class="event-card">
+                <div class="card-meta">
+                    <span class="card-index">04 —</span>
+                    <span class="card-tag">Debate</span>
+                </div>
+                <h3>Digital Dilemma</h3>
+                <p>Fast-paced tech debate tournament. Argue the ethics, mechanics, and future of AI, privacy, and system architectures.</p>
+                <div class="card-footer">
+                    <span class="card-participants">Solo participants · 16 slots</span>
+                    <div class="card-arrow">↗</div>
+                </div>
+            </a>
+
+            <a href="pages/events/cyber-canvas.html" class="event-card">
+                <div class="card-meta">
+                    <span class="card-index">05 —</span>
+                    <span class="card-tag">Design / Presentation</span>
+                </div>
+                <h3>Cyber Canvas</h3>
+                <p>Digital poster gallery. Showcase complex technological concepts through compelling visual design and research.</p>
+                <div class="card-footer">
+                    <span class="card-participants">Solo participants</span>
+                    <div class="card-arrow">↗</div>
+                </div>
+            </a>
+
+        </div>
+    </section>
+
+    <!-- ── CTA Banner ─────────────────────────── -->
+    <div class="cta-banner">
+        <h2>Ready to Enter the Grid?</h2>
+        <p>Secure your node before capacity locks. Registration closes on event day.</p>
+        <a href="pages/auth/register.html" class="btn-glow">Initialize Registration</a>
+    </div>
+
+    <!-- ── Footer ─────────────────────────────── -->
     <footer>
-        <p>&copy; 2026 Cyber Odyssey. Securely managed via Render & Firebase.</p>
+        <span class="footer-logo">CYBER_ODYSSEY 2.0</span>
+        <span class="footer-copy">&copy; 2026 Dept. of CSE (IoT, CS, BT) · Powered by Render &amp; Firebase</span>
+        <div class="footer-links">
+            <a href="pages/auth/login.html">Login</a>
+            <a href="pages/auth/register.html">Register</a>
+            <a href="#events">Events</a>
+        </div>
     </footer>
 
+    <!-- ── Scripts ────────────────────────────── -->
+    <script>
+        // ── Custom cursor ───────────────────────────────────────────
+        const dot  = document.getElementById('cursor-dot');
+        const ring = document.getElementById('cursor-ring');
+        let mx = 0, my = 0, rx = 0, ry = 0;
+
+        document.addEventListener('mousemove', e => {
+            mx = e.clientX; my = e.clientY;
+            dot.style.left  = mx + 'px';
+            dot.style.top   = my + 'px';
+        });
+
+        (function animRing() {
+            rx += (mx - rx) * 0.12;
+            ry += (my - ry) * 0.12;
+            ring.style.left = rx + 'px';
+            ring.style.top  = ry + 'px';
+            requestAnimationFrame(animRing);
+        })();
+
+        document.addEventListener('mousedown', () => { dot.style.transform = 'translate(-50%,-50%) scale(1.8)'; });
+        document.addEventListener('mouseup',   () => { dot.style.transform = 'translate(-50%,-50%) scale(1)'; });
+
+        // ── Navbar scroll shrink ────────────────────────────────────
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            navbar.classList.toggle('scrolled', window.scrollY > 40);
+        }, { passive: true });
+
+        // ── Mobile nav toggle ───────────────────────────────────────
+        const toggle   = document.getElementById('nav-toggle');
+        const navLinks = document.getElementById('nav-links');
+        toggle.addEventListener('click', () => {
+            const open = navLinks.classList.toggle('open');
+            toggle.classList.toggle('open', open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        });
+        navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+            navLinks.classList.remove('open');
+            toggle.classList.remove('open');
+            document.body.style.overflow = '';
+        }));
+
+        // ── Matrix rain canvas ──────────────────────────────────────
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx    = canvas.getContext('2d');
+        const CHARS  = '01アイウエオカキクケコサシスセソタチツテトナニヌネノ<>/\\{}|#$%';
+
+        function resizeCanvas() {
+            canvas.width  = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas, { passive: true });
+
+        const fontSize = 13;
+        let drops = [];
+        function resetDrops() {
+            drops = Array.from({ length: Math.ceil(canvas.width / fontSize) }, () =>
+                Math.floor(Math.random() * -canvas.height / fontSize));
+        }
+        resetDrops();
+        window.addEventListener('resize', resetDrops, { passive: true });
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(5,5,7,0.06)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = `${fontSize}px 'Share Tech Mono', monospace`;
+
+            drops.forEach((y, i) => {
+                const char = CHARS[Math.floor(Math.random() * CHARS.length)];
+                // Head glyph is brighter
+                ctx.fillStyle = (y < 2) ? '#ffffff' : `rgba(0,255,204,${0.2 + Math.random() * 0.4})`;
+                ctx.fillText(char, i * fontSize, y * fontSize);
+
+                if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            });
+        }
+        setInterval(drawMatrix, 50);
+
+        // ── Typing effect for hero subtitle ────────────────────────
+        const subEl  = document.getElementById('hero-sub');
+        const subText = 'The ultimate technical symposium. Compete in high-stakes hackathons, engage in digital debates, and exploit network vulnerabilities. Secure your node today.';
+        let charIdx  = 0;
+
+        function typeWriter() {
+            if (charIdx < subText.length) {
+                subEl.textContent = subText.slice(0, ++charIdx);
+                setTimeout(typeWriter, 22);
+            }
+        }
+        // Start typing after the paragraph's fade-in delay
+        setTimeout(typeWriter, 900);
+
+        // ── Stats counter animation ─────────────────────────────────
+        function animateCounter(el, target, duration = 1400) {
+            const start = performance.now();
+            const update = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                const eased    = 1 - Math.pow(1 - progress, 3);
+                el.textContent = Math.floor(eased * target);
+                if (progress < 1) requestAnimationFrame(update);
+                else el.textContent = target;
+            };
+            requestAnimationFrame(update);
+        }
+
+        const statsObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.querySelectorAll('.stat-num').forEach(el => {
+                        animateCounter(el, parseInt(el.dataset.target, 10));
+                    });
+                    statsObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: .5 });
+        statsObserver.observe(document.querySelector('.stats-strip'));
+
+        // ── Card reveal on scroll (staggered) ──────────────────────
+        const cardObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // small stagger per card
+                    const cards = document.querySelectorAll('.event-card');
+                    cards.forEach((c, i) => {
+                        setTimeout(() => c.classList.add('visible'), i * 90);
+                    });
+                    cardObserver.disconnect();
+                }
+            });
+        }, { threshold: .08 });
+        cardObserver.observe(document.querySelector('.events-grid'));
+
+    </script>
 </body>
 </html>
