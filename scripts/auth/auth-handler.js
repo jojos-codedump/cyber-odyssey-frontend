@@ -12,17 +12,17 @@ import { auth, db } from "./firebase-config.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RACE WINDOW FIX
-// The body is hidden immediately via an inline <style> injected into <head>
-// before any content renders. It is only revealed once auth is confirmed.
-// This closes the ~300ms–1.5s window where the full page was visible while
-// onAuthStateChanged hadn't fired yet (exploitable via fast back/forward nav).
+// hideBody() is called only when monitorAuthState(requireAuth=true) runs,
+// so pages that don't require auth (login.html, register.html) are never
+// affected and render normally.
 // ─────────────────────────────────────────────────────────────────────────────
-(function hideBodyUntilAuthConfirmed() {
+function hideBody() {
+    if (document.getElementById('__auth_guard')) return; // already hidden
     const style = document.createElement('style');
     style.id = '__auth_guard';
     style.textContent = 'body { visibility: hidden !important; }';
     document.head.appendChild(style);
-})();
+}
 
 function revealBody() {
     const s = document.getElementById('__auth_guard');
@@ -121,6 +121,11 @@ export async function logoutUser() {
 //      accidentally revealing the page.
 // ─────────────────────────────────────────────────────────────────────────────
 export function monitorAuthState(requireAuth = true, allowedRoles = []) {
+    // Hide body immediately on pages that require auth, before the async
+    // Firebase check completes. Pages that don't require auth (login, register)
+    // skip this so they always render.
+    if (requireAuth) hideBody();
+
     onAuthStateChanged(auth, async (user) => {
 
         // ── No session ────────────────────────────────────────────────────────
